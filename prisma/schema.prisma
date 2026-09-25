@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  kasir
+}
+
+enum StatusPesanan {
+  diproses
+  selesai
+  dibatalkan
+}
+
+enum MetodeBayar {
+  tunai
+  non_tunai
+}
+
+enum StatusBayar {
+  lunas
+  belum_lunas
+}
+
+enum JenisStok {
+  masuk
+  keluar
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  username      String?   @unique
+  role          Role      @default(kasir)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  pesanan       Pesanan[]
+
+  @@map("tb_user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tb_session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("tb_account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String    @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+  @@map("tb_verification")
+}
+
+model Kategori {
+  id           Int      @id @default(autoincrement())
+  namaKategori String   @unique @db.VarChar(50)
+  produk       Produk[]
+
+  @@map("tb_kategori")
+}
+
+model Produk {
+  id         Int             @id @default(autoincrement())
+  namaProduk String          @db.VarChar(100)
+  harga      Decimal         @db.Decimal(10, 2)
+  stok       Int             @default(0)
+  kategoriId Int
+  kategori   Kategori        @relation(fields: [kategoriId], references: [id], onDelete: Restrict)
+  detail     DetailPesanan[]
+  stokMoves  Stok[]
+
+  @@index([kategoriId])
+  @@map("tb_produk")
+}
+
+model Pesanan {
+  id         Int             @id @default(autoincrement())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tanggal    DateTime        @db.Date
+  total      Decimal         @default(0) @db.Decimal(10, 2)
+  status     StatusPesanan   @default(diproses)
+  detail     DetailPesanan[]
+  pembayaran Pembayaran?
+
+  @@index([userId])
+  @@index([tanggal])
+  @@index([status])
+  @@map("tb_pesanan")
+}
+
+model DetailPesanan {
+  id        Int     @id @default(autoincrement())
+  pesananId Int
+  pesanan   Pesanan @relation(fields: [pesananId], references: [id], onDelete: Cascade)
+  produkId  Int
+  produk    Produk  @relation(fields: [produkId], references: [id], onDelete: Restrict)
+  jumlah    Int
+  harga     Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  @@index([pesananId])
+  @@index([produkId])
+  @@map("tb_detail_pesanan")
+}
+
+model Pembayaran {
+  id          Int         @id @default(autoincrement())
+  pesananId   Int         @unique
+  pesanan     Pesanan     @relation(fields: [pesananId], references: [id], onDelete: Cascade)
+  metode      MetodeBayar
+  jumlahBayar Decimal     @db.Decimal(10, 2)
+  tanggal     DateTime    @db.Date
+  status      StatusBayar @default(belum_lunas)
+
+  @@map("tb_pembayaran")
+}
+
+model Stok {
+  id       Int       @id @default(autoincrement())
+  produkId Int
+  produk   Produk    @relation(fields: [produkId], references: [id], onDelete: Restrict)
+  jumlah   Int
+  jenis    JenisStok
+  tanggal  DateTime  @db.Date
+
+  @@index([produkId])
+  @@index([jenis])
+  @@map("tb_stok")
+}
+
+model LaporanPenjualan {
+  id             Int     @id @default(autoincrement())
+  periode        String  @unique @db.VarChar(20)
+  totalPenjualan Decimal @default(0) @db.Decimal(12, 2)
+
+  @@index([periode])
+  @@map("tb_laporan_penjualan")
+}
