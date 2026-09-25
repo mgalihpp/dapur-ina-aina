@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { EmptyState } from "@/features/shared/components/EmptyState";
 import { queryErrorMessage } from "@/lib/query-errors";
 import { useAdminDashboard, useStockOverview } from "../queries";
 import type { DashboardPeriod, PeriodData } from "../types";
@@ -11,8 +11,16 @@ import { PeriodFilter } from "./PeriodFilter";
 import { TotalBalanceCard } from "./TotalBalanceCard";
 import { TotalIncomeCard } from "./TotalIncomeCard";
 
+const STOCK_KEY = "admin-stock-warning-open";
+
+function readStockOpen() {
+	if (typeof window === "undefined") return true;
+	return window.localStorage.getItem(STOCK_KEY) !== "false";
+}
+
 export function AdminDashboard() {
 	const [period, setPeriod] = useState<DashboardPeriod>("today");
+	const [stockOpen, setStockOpen] = useState(readStockOpen);
 	const dashboard = useAdminDashboard(period);
 	const stock = useStockOverview();
 
@@ -26,6 +34,20 @@ export function AdminDashboard() {
 	const stockError = stock.isError
 		? queryErrorMessage(stock.error, "Gagal memuat peringatan stok.")
 		: null;
+	const showStockSection =
+		stockLoading || stockError !== null || lowStock.length > 0;
+
+	function toggleStock() {
+		setStockOpen((open) => {
+			const next = !open;
+			try {
+				window.localStorage.setItem(STOCK_KEY, String(next));
+			} catch {
+				// abaikan: penyimpanan lokal tidak tersedia
+			}
+			return next;
+		});
+	}
 
 	return (
 		<div className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
@@ -39,55 +61,75 @@ export function AdminDashboard() {
 					{error}
 				</p>
 			) : null}
-			<section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-				<div className="flex items-center justify-between gap-3">
-					<div>
-						<h2 className="font-bold text-amber-950">
-							Peringatan stok menipis
-						</h2>
-						<p className="mt-1 text-sm text-amber-900">
-							{stockLoading
-								? "Memuat status stok…"
-								: stockError
-									? "Status stok belum tersedia."
-									: `${lowStock.length} produk memiliki stok 5 atau kurang.`}
-						</p>
-					</div>
-					<Link
-						to="/admin/stock"
-						className="shrink-0 rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-950"
-					>
-						Kelola stok
-					</Link>
-				</div>
-				{stockLoading ? (
-					<p className="mt-3 text-sm text-amber-900">Memuat peringatan stok…</p>
-				) : stockError ? (
-					<p role="alert" className="mt-3 text-sm font-medium text-red-800">
-						{stockError}
-					</p>
-				) : lowStock.length ? (
-					<ul className="mt-3 flex flex-wrap gap-2">
-						{lowStock.slice(0, 8).map((row) => (
-							<li
-								key={row.id}
-								className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-amber-950"
+			{showStockSection ? (
+				<section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+					<div className="flex items-center justify-between gap-3">
+						<div>
+							<h2 className="font-bold text-amber-950">
+								Peringatan stok menipis
+							</h2>
+							<p className="mt-1 text-sm text-amber-900">
+								{stockLoading
+									? "Memuat status stok…"
+									: stockError
+										? "Status stok belum tersedia."
+										: `${lowStock.length} produk memiliki stok 5 atau kurang.`}
+							</p>
+						</div>
+						<div className="flex shrink-0 items-center gap-2">
+							<Link
+								to="/admin/stock"
+								className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-950"
 							>
-								{row.name} · {row.stock}
-							</li>
-						))}
-					</ul>
-				) : (
-					<EmptyState
-						variant="stock"
-						title="Stok sedang aman"
-						description="Belum ada produk dengan stok lima atau kurang."
-						size="sm"
-						surface="solid"
-						className="mt-3 py-3"
-					/>
-				)}
-			</section>
+								Kelola stok
+							</Link>
+							<button
+								type="button"
+								onClick={toggleStock}
+								aria-expanded={stockOpen}
+								aria-controls="admin-stock-warning"
+								aria-label={
+									stockOpen
+										? "Ciutkan peringatan stok"
+										: "Bentangkan peringatan stok"
+								}
+								className="rounded-lg border border-amber-300 p-2 text-amber-950 transition hover:bg-amber-100"
+							>
+								<ChevronDown
+									className={`size-4 transition-transform ${stockOpen ? "rotate-180" : ""}`}
+								/>
+							</button>
+						</div>
+					</div>
+					{stockOpen ? (
+						<div id="admin-stock-warning">
+							{stockLoading ? (
+								<p className="mt-3 text-sm text-amber-900">
+									Memuat peringatan stok…
+								</p>
+							) : stockError ? (
+								<p
+									role="alert"
+									className="mt-3 text-sm font-medium text-red-800"
+								>
+									{stockError}
+								</p>
+							) : (
+								<ul className="mt-3 flex flex-wrap gap-2">
+									{lowStock.slice(0, 8).map((row) => (
+										<li
+											key={row.id}
+											className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-amber-950"
+										>
+											{row.name} · {row.stock}
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+					) : null}
+				</section>
+			) : null}
 			{loading ? (
 				<p className="mt-6 text-sm text-neutral-500">Memuat dasbor…</p>
 			) : !data ||
