@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import { getDashboard } from "@/server/dashboard-functions";
 import { getStockOverview } from "@/server/stock-functions";
 import type { DashboardPeriod, PeriodData } from "../types";
@@ -18,6 +19,8 @@ export function AdminDashboard() {
 	const [lowStock, setLowStock] = useState<
 		Awaited<ReturnType<typeof getStockOverview>>
 	>([]);
+	const [stockLoading, setStockLoading] = useState(true);
+	const [stockError, setStockError] = useState<string | null>(null);
 
 	useEffect(() => {
 		let alive = true;
@@ -47,10 +50,23 @@ export function AdminDashboard() {
 		let active = true;
 		getStockOverview()
 			.then((rows) => {
-				if (active) setLowStock(rows.filter((row) => row.low));
+				if (active) {
+					setLowStock(rows.filter((row) => row.low));
+					setStockError(null);
+				}
 			})
-			.catch(() => {
-				if (active) setLowStock([]);
+			.catch((cause: unknown) => {
+				if (active) {
+					setLowStock([]);
+					setStockError(
+						cause instanceof Error
+							? cause.message
+							: "Gagal memuat peringatan stok.",
+					);
+				}
+			})
+			.finally(() => {
+				if (active) setStockLoading(false);
 			});
 		return () => {
 			active = false;
@@ -76,7 +92,11 @@ export function AdminDashboard() {
 							Peringatan stok menipis
 						</h2>
 						<p className="mt-1 text-sm text-amber-900">
-							{lowStock.length} produk memiliki stok 5 atau kurang.
+							{stockLoading
+								? "Memuat status stok…"
+								: stockError
+									? "Status stok belum tersedia."
+									: `${lowStock.length} produk memiliki stok 5 atau kurang.`}
 						</p>
 					</div>
 					<Link
@@ -86,7 +106,13 @@ export function AdminDashboard() {
 						Kelola stok
 					</Link>
 				</div>
-				{lowStock.length ? (
+				{stockLoading ? (
+					<p className="mt-3 text-sm text-amber-900">Memuat peringatan stok…</p>
+				) : stockError ? (
+					<p role="alert" className="mt-3 text-sm font-medium text-red-800">
+						{stockError}
+					</p>
+				) : lowStock.length ? (
 					<ul className="mt-3 flex flex-wrap gap-2">
 						{lowStock.slice(0, 8).map((row) => (
 							<li
@@ -97,7 +123,16 @@ export function AdminDashboard() {
 							</li>
 						))}
 					</ul>
-				) : null}
+				) : (
+					<EmptyState
+						variant="stock"
+						title="Stok sedang aman"
+						description="Belum ada produk dengan stok lima atau kurang."
+						size="sm"
+						surface="solid"
+						className="mt-3 py-3"
+					/>
+				)}
 			</section>
 			{loading ? (
 				<p className="mt-6 text-sm text-neutral-500">Memuat dasbor…</p>

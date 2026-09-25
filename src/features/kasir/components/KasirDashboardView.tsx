@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import { getCashierDashboard } from "@/server/dashboard-functions";
 
 export function KasirDashboardView() {
@@ -82,9 +83,14 @@ export function KasirDashboardView() {
 						))}
 					</ul>
 				) : summary ? (
-					<p className="mt-3 text-sm text-neutral-500">
-						Tidak ada produk dengan stok menipis.
-					</p>
+					<EmptyState
+						variant="stock"
+						title="Stok sedang aman"
+						description="Belum ada produk dengan stok lima atau kurang."
+						size="sm"
+						surface="plain"
+						className="mt-3 py-5"
+					/>
 				) : (
 					<p className="mt-3 text-sm text-neutral-500">Memuat data stok…</p>
 				)}

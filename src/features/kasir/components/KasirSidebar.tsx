@@ -1,5 +1,7 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Boxes, ClipboardList, LayoutGrid, ShoppingCart } from "lucide-react";
+import { usePosStore } from "@/features/kasir/lib/pos-store";
+import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import {
 	AppSidebar,
 	type SidebarItem,
@@ -37,6 +39,8 @@ export function KasirSidebar() {
 	];
 
 	async function logout() {
+		usePosStore.getState().reset();
+		useOrdersStore.getState().reset();
 		await authClient.signOut();
 		await navigate({ to: "/login" });
 	}

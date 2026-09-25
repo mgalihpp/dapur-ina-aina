@@ -9,6 +9,7 @@ import {
 	Wallet,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtRp } from "@/features/shared/lib/format";
 import type { PeriodeKind } from "@/server/periode";
 import {
@@ -71,53 +72,6 @@ function metodeLabel(metode: string | null): string {
 	if (metode === "tunai") return "Tunai";
 	if (metode === "non_tunai") return "Non-tunai";
 	return "-";
-}
-
-function EmptyVector({ label }: { label: string }) {
-	return (
-		<svg
-			width="180"
-			height="140"
-			viewBox="0 0 180 140"
-			fill="none"
-			aria-hidden="true"
-			role="img"
-			aria-label={label}
-		>
-			<ellipse cx="90" cy="124" rx="62" ry="8" fill="#F5F6F8" />
-			<rect
-				x="58"
-				y="18"
-				width="64"
-				height="88"
-				rx="8"
-				fill="#fff"
-				stroke="#E5E7EB"
-				strokeWidth="3"
-			/>
-			<rect x="74" y="10" width="32" height="12" rx="6" fill="#EF7D1A" />
-			<path
-				d="M68 44h44M68 56h44M68 68h30"
-				stroke="#E5E7EB"
-				strokeWidth="3"
-				strokeLinecap="round"
-			/>
-			<path
-				d="M68 80h20"
-				stroke="#EF7D1A"
-				strokeWidth="3"
-				strokeLinecap="round"
-			/>
-			<circle cx="130" cy="92" r="14" fill="#FDE9D7" />
-			<path
-				d="M124 92l4 4 8-8"
-				stroke="#EF7D1A"
-				strokeWidth="3"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	);
 }
 
 export function ReportsView() {
@@ -375,12 +329,24 @@ export function ReportsView() {
 							))}
 						</div>
 					) : rows.length === 0 ? (
-						<div className="flex flex-col items-center px-5 py-8 text-center">
-							<EmptyVector label="Belum ada laporan tersimpan" />
-							<p className="mt-3 text-sm font-bold text-neutral-900">
-								Belum ada laporan tersimpan
-							</p>
-						</div>
+						<EmptyState
+							variant="report"
+							title="Belum ada laporan tersimpan"
+							description="Generate laporan pertama dari periode penjualan yang tersedia."
+							size="sm"
+							surface="plain"
+							className="px-5 py-8"
+							action={
+								<button
+									type="button"
+									onClick={() => void generate()}
+									disabled={working}
+									className="rounded-xl bg-[#F97316] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#ea6a0a] disabled:opacity-50"
+								>
+									{working ? "Memproses…" : "Generate laporan"}
+								</button>
+							}
+						/>
 					) : (
 						<ul className="max-h-[480px] divide-y divide-neutral-100 overflow-y-auto p-2">
 							{rows.map((r) => {
@@ -468,19 +434,23 @@ export function ReportsView() {
 						</p>
 					) : null}
 					{!detail ? (
-						<div className="flex flex-col items-center px-5 py-10 text-center">
-							<EmptyVector label="Belum ada detail dipilih" />
-							<p className="mt-3 text-sm font-bold text-neutral-900">
-								Pilih laporan untuk melihat rinciannya
-							</p>
-						</div>
+						<EmptyState
+							variant="report"
+							title="Pilih laporan"
+							description="Pilih laporan tersimpan atau generate periode baru untuk melihat rinciannya."
+							size="md"
+							surface="plain"
+							className="px-5 py-10"
+						/>
 					) : detail.pesanan.length === 0 ? (
-						<div className="flex flex-col items-center px-5 py-10 text-center">
-							<EmptyVector label="Tidak ada pesanan pada rentang ini" />
-							<p className="mt-3 text-sm font-bold text-neutral-900">
-								Tidak ada pesanan pada rentang ini
-							</p>
-						</div>
+						<EmptyState
+							variant="report"
+							title="Tidak ada pesanan pada rentang ini"
+							description="Belum ada pesanan selesai dan lunas yang masuk ke rentang tersebut."
+							size="md"
+							surface="plain"
+							className="px-5 py-10"
+						/>
 					) : (
 						<div className="overflow-x-auto">
 							<table className="w-full min-w-[680px] text-sm">

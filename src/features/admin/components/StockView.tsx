@@ -6,6 +6,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import {
 	getStockOverview,
 	listStockMoves,
@@ -26,6 +27,15 @@ export function StockView() {
 	const [end, setEnd] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
+	const [loading, setLoading] = useState(true);
+	const hasMoveFilters = Boolean(moveProductId || type || start || end);
+
+	function resetMoveFilters() {
+		setMoveProductId("");
+		setType("");
+		setStart("");
+		setEnd("");
+	}
 
 	const refreshProducts = useCallback(async () => {
 		setProducts(await getStockOverview());
@@ -45,12 +55,13 @@ export function StockView() {
 	}, [moveProductId, type, start, end]);
 
 	useEffect(() => {
-		void Promise.all([refreshProducts(), refreshMoves()]).catch(
-			(cause: unknown) =>
+		void Promise.all([refreshProducts(), refreshMoves()])
+			.catch((cause: unknown) =>
 				setError(
 					cause instanceof Error ? cause.message : "Gagal memuat data stok.",
 				),
-		);
+			)
+			.finally(() => setLoading(false));
 	}, [refreshProducts, refreshMoves]);
 
 	async function submitRestock(event: React.FormEvent<HTMLFormElement>) {
@@ -85,6 +96,9 @@ export function StockView() {
 	return (
 		<main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Stok</h1>
+			{loading ? (
+				<p className="mt-4 text-sm text-neutral-500">Memuat data stok…</p>
+			) : null}
 			{error ? (
 				<p
 					role="alert"
@@ -164,6 +178,21 @@ export function StockView() {
 									</td>
 								</tr>
 							))}
+							{!loading && products.length === 0 ? (
+								<tr>
+									<td colSpan={4} className="p-2">
+										<EmptyState
+											variant="stock"
+											title="Belum ada produk untuk dipantau"
+											description="Tambahkan produk dan catat stok masuk untuk mulai memantau persediaan."
+											size="sm"
+											surface="plain"
+											width="content"
+											className="min-w-[280px]"
+										/>
+									</td>
+								</tr>
+							) : null}
 						</tbody>
 					</table>
 				</div>
@@ -257,10 +286,35 @@ export function StockView() {
 							))}
 						</tbody>
 					</table>
-					{moves.length === 0 ? (
-						<p className="px-4 py-6 text-center text-sm text-neutral-500">
-							Belum ada pergerakan sesuai filter.
-						</p>
+					{!loading && moves.length === 0 ? (
+						<EmptyState
+							variant="stock"
+							title={
+								hasMoveFilters
+									? "Belum ada pergerakan sesuai filter"
+									: "Belum ada pergerakan"
+							}
+							description={
+								hasMoveFilters
+									? "Coba kosongkan filter untuk melihat seluruh riwayat stok."
+									: "Pergerakan stok masuk dan keluar akan muncul di sini setelah ada transaksi."
+							}
+							action={
+								hasMoveFilters ? (
+									<button
+										type="button"
+										onClick={resetMoveFilters}
+										className="rounded-xl border border-neutral-200 px-4 py-2 text-xs font-bold text-[var(--sea-ink)] transition hover:bg-neutral-50"
+									>
+										Reset filter
+									</button>
+								) : null
+							}
+							size="sm"
+							surface="plain"
+							width="content"
+							className="min-w-[280px] px-4 py-6"
+						/>
 					) : null}
 				</div>
 			</section>

@@ -7,6 +7,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useOrdersStore } from "@/features/orders/lib/orders-store";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
 import type { AdminOrderDetail, AdminOrderRow } from "@/server/order-functions";
 import {
@@ -33,18 +35,22 @@ export function OrdersView() {
 	const status = search.status ?? "";
 	const product = search.product ?? "";
 	const selectedId = search.orderId ?? null;
+	const method = useOrdersStore((state) => state.method);
+	const amount = useOrdersStore((state) => state.amount);
+	const invoiceOpen = useOrdersStore((state) => state.invoiceOpen);
+	const setPaymentDraft = useOrdersStore((state) => state.setPaymentDraft);
+	const setMethod = useOrdersStore((state) => state.setMethod);
+	const setAmount = useOrdersStore((state) => state.setAmount);
+	const setInvoiceOpen = useOrdersStore((state) => state.setInvoiceOpen);
 
 	const [orders, setOrders] = useState<AdminOrderRow[]>([]);
 	const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
 	const [productDraft, setProductDraft] = useState(product);
-	const [method, setMethod] = useState<"tunai" | "non_tunai">("tunai");
-	const [amount, setAmount] = useState("");
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [detailLoading, setDetailLoading] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [invoice, setInvoice] = useState(false);
 	const listRef = useRef<HTMLDivElement>(null);
 	const firstLoad = useRef(true);
 
@@ -143,8 +149,10 @@ export function OrdersView() {
 			.then((row) => {
 				if (!active) return;
 				setDetail(row);
-				setMethod(row.paymentMethod ?? "tunai");
-				setAmount(row.paymentAmount ?? "");
+				setPaymentDraft({
+					method: row.paymentMethod ?? "tunai",
+					amount: row.paymentAmount ?? "",
+				});
 			})
 			.catch((cause: unknown) => {
 				if (active)
@@ -158,7 +166,7 @@ export function OrdersView() {
 		return () => {
 			active = false;
 		};
-	}, [selectedId, orders, patchSearch]);
+	}, [selectedId, orders, patchSearch, setPaymentDraft]);
 
 	async function refreshOrders() {
 		const rows = await listOrders({
@@ -180,8 +188,10 @@ export function OrdersView() {
 		if (!id) return;
 		const row = await getOrderDetail({ data: { id } });
 		setDetail(row);
-		setMethod(row.paymentMethod ?? "tunai");
-		setAmount(row.paymentAmount ?? "");
+		setPaymentDraft({
+			method: row.paymentMethod ?? "tunai",
+			amount: row.paymentAmount ?? "",
+		});
 	}
 
 	async function runAction(action: () => Promise<unknown>) {
@@ -316,9 +326,40 @@ export function OrdersView() {
 							))
 						)}
 						{!loading && orders.length === 0 ? (
-							<p className="p-6 text-center text-sm text-neutral-500">
-								Tidak ada transaksi yang sesuai filter.
-							</p>
+							<EmptyState
+								variant="orders"
+								title={
+									start || end || status || product
+										? "Tidak ada transaksi yang cocok"
+										: "Belum ada transaksi"
+								}
+								description={
+									start || end || status || product
+										? "Coba ubah atau kosongkan filter untuk melihat transaksi lain."
+										: "Pesanan yang dibuat kasir akan muncul di daftar ini."
+								}
+								action={
+									start || end || status || product ? (
+										<button
+											type="button"
+											onClick={() =>
+												patchSearch({
+													start: undefined,
+													end: undefined,
+													status: undefined,
+													product: undefined,
+												})
+											}
+											className="rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-bold text-[var(--sea-ink)] transition hover:bg-neutral-50"
+										>
+											Reset filter
+										</button>
+									) : null
+								}
+								size="sm"
+								surface="plain"
+								className="p-5"
+							/>
 						) : null}
 					</div>
 				</section>
@@ -326,9 +367,14 @@ export function OrdersView() {
 					{detailLoading ? (
 						<p className="text-sm text-neutral-500">Memuat detail…</p>
 					) : !detail ? (
-						<div className="flex min-h-60 items-center justify-center text-sm text-neutral-500">
-							Pilih pesanan untuk melihat detail.
-						</div>
+						<EmptyState
+							variant="orders"
+							title="Pilih pesanan"
+							description="Pilih transaksi di daftar untuk melihat rincian, pembayaran, dan aksi status."
+							size="sm"
+							surface="plain"
+							className="min-h-72"
+						/>
 					) : (
 						<>
 							<div className="flex flex-wrap items-center justify-between gap-3">
@@ -340,7 +386,7 @@ export function OrdersView() {
 								</div>
 								<button
 									type="button"
-									onClick={() => setInvoice(true)}
+									onClick={() => setInvoiceOpen(true)}
 									className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold"
 								>
 									Lihat billing
@@ -492,11 +538,11 @@ export function OrdersView() {
 					)}
 				</section>
 			</div>
-			{invoice && detail ? (
+			{invoiceOpen && detail ? (
 				<InvoiceModal
 					order={detail}
-					onClose={() => setInvoice(false)}
-					onPrinted={() => setInvoice(false)}
+					onClose={() => setInvoiceOpen(false)}
+					onPrinted={() => setInvoiceOpen(false)}
 				/>
 			) : null}
 		</main>

@@ -12,18 +12,25 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as KasirRouteImport } from './routes/kasir'
+import { Route as KeranjangRouteImport } from './routes/keranjang'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MejaRouteImport } from './routes/meja'
+import { Route as MenuRouteImport } from './routes/menu'
+import { Route as PembayaranRouteImport } from './routes/pembayaran'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminStockRouteImport } from './routes/admin.stock'
+import { Route as AdminTablesRouteImport } from './routes/admin.tables'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as KasirIndexRouteImport } from './routes/kasir.index'
 import { Route as KasirOrdersRouteImport } from './routes/kasir.orders'
 import { Route as KasirPosRouteImport } from './routes/kasir.pos'
 import { Route as KasirStockRouteImport } from './routes/kasir.stock'
+import { Route as PesananIndexRouteImport } from './routes/pesanan.index'
+import { Route as PesananOrderIdRouteImport } from './routes/pesanan.$orderId'
 import { Route as AdminMenuIndexRouteImport } from './routes/admin.menu.index'
 import { Route as AdminMenuAddRouteImport } from './routes/admin.menu.add'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.index'
@@ -46,9 +53,29 @@ const KasirRoute = KasirRouteImport.update({
   path: '/kasir',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KeranjangRoute = KeranjangRouteImport.update({
+  id: '/keranjang',
+  path: '/keranjang',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MejaRoute = MejaRouteImport.update({
+  id: '/meja',
+  path: '/meja',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MenuRoute = MenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PembayaranRoute = PembayaranRouteImport.update({
+  id: '/pembayaran',
+  path: '/pembayaran',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -81,6 +108,11 @@ const AdminStockRoute = AdminStockRouteImport.update({
   path: '/stock',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTablesRoute = AdminTablesRouteImport.update({
+  id: '/tables',
+  path: '/tables',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -105,6 +137,16 @@ const KasirStockRoute = KasirStockRouteImport.update({
   id: '/stock',
   path: '/stock',
   getParentRoute: () => KasirRoute,
+} as any)
+const PesananIndexRoute = PesananIndexRouteImport.update({
+  id: '/pesanan/',
+  path: '/pesanan/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PesananOrderIdRoute = PesananOrderIdRouteImport.update({
+  id: '/pesanan/$orderId',
+  path: '/pesanan/$orderId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMenuIndexRoute = AdminMenuIndexRouteImport.update({
   id: '/',
@@ -141,18 +183,25 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kasir': typeof KasirRouteWithChildren
+  '/keranjang': typeof KeranjangRoute
   '/login': typeof LoginRoute
+  '/meja': typeof MejaRoute
+  '/menu': typeof MenuRoute
+  '/pembayaran': typeof PembayaranRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/reports': typeof AdminReportsRouteWithChildren
   '/admin/stock': typeof AdminStockRoute
+  '/admin/tables': typeof AdminTablesRoute
   '/admin/users': typeof AdminUsersRoute
   '/kasir/orders': typeof KasirOrdersRoute
   '/kasir/pos': typeof KasirPosRoute
   '/kasir/stock': typeof KasirStockRoute
+  '/pesanan/$orderId': typeof PesananOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/kasir/': typeof KasirIndexRoute
+  '/pesanan/': typeof PesananIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu/': typeof AdminMenuIndexRoute
@@ -162,15 +211,22 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/keranjang': typeof KeranjangRoute
   '/login': typeof LoginRoute
+  '/meja': typeof MejaRoute
+  '/menu': typeof MenuRoute
+  '/pembayaran': typeof PembayaranRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/stock': typeof AdminStockRoute
+  '/admin/tables': typeof AdminTablesRoute
   '/admin/users': typeof AdminUsersRoute
   '/kasir/orders': typeof KasirOrdersRoute
   '/kasir/pos': typeof KasirPosRoute
   '/kasir/stock': typeof KasirStockRoute
+  '/pesanan/$orderId': typeof PesananOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/kasir': typeof KasirIndexRoute
+  '/pesanan': typeof PesananIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu': typeof AdminMenuIndexRoute
@@ -183,18 +239,25 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kasir': typeof KasirRouteWithChildren
+  '/keranjang': typeof KeranjangRoute
   '/login': typeof LoginRoute
+  '/meja': typeof MejaRoute
+  '/menu': typeof MenuRoute
+  '/pembayaran': typeof PembayaranRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/reports': typeof AdminReportsRouteWithChildren
   '/admin/stock': typeof AdminStockRoute
+  '/admin/tables': typeof AdminTablesRoute
   '/admin/users': typeof AdminUsersRoute
   '/kasir/orders': typeof KasirOrdersRoute
   '/kasir/pos': typeof KasirPosRoute
   '/kasir/stock': typeof KasirStockRoute
+  '/pesanan/$orderId': typeof PesananOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/kasir/': typeof KasirIndexRoute
+  '/pesanan/': typeof PesananIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu/': typeof AdminMenuIndexRoute
@@ -208,18 +271,25 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kasir'
+    | '/keranjang'
     | '/login'
+    | '/meja'
+    | '/menu'
+    | '/pembayaran'
     | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/reports'
     | '/admin/stock'
+    | '/admin/tables'
     | '/admin/users'
     | '/kasir/orders'
     | '/kasir/pos'
     | '/kasir/stock'
+    | '/pesanan/$orderId'
     | '/admin/'
     | '/kasir/'
+    | '/pesanan/'
     | '/admin/menu/add'
     | '/api/auth/$'
     | '/admin/menu/'
@@ -229,15 +299,22 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/keranjang'
     | '/login'
+    | '/meja'
+    | '/menu'
+    | '/pembayaran'
     | '/admin/categories'
     | '/admin/stock'
+    | '/admin/tables'
     | '/admin/users'
     | '/kasir/orders'
     | '/kasir/pos'
     | '/kasir/stock'
+    | '/pesanan/$orderId'
     | '/admin'
     | '/kasir'
+    | '/pesanan'
     | '/admin/menu/add'
     | '/api/auth/$'
     | '/admin/menu'
@@ -249,18 +326,25 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kasir'
+    | '/keranjang'
     | '/login'
+    | '/meja'
+    | '/menu'
+    | '/pembayaran'
     | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/reports'
     | '/admin/stock'
+    | '/admin/tables'
     | '/admin/users'
     | '/kasir/orders'
     | '/kasir/pos'
     | '/kasir/stock'
+    | '/pesanan/$orderId'
     | '/admin/'
     | '/kasir/'
+    | '/pesanan/'
     | '/admin/menu/add'
     | '/api/auth/$'
     | '/admin/menu/'
@@ -273,7 +357,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   KasirRoute: typeof KasirRouteWithChildren
+  KeranjangRoute: typeof KeranjangRoute
   LoginRoute: typeof LoginRoute
+  MejaRoute: typeof MejaRoute
+  MenuRoute: typeof MenuRoute
+  PembayaranRoute: typeof PembayaranRoute
+  PesananOrderIdRoute: typeof PesananOrderIdRoute
+  PesananIndexRoute: typeof PesananIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -300,11 +390,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KasirRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/keranjang': {
+      id: '/keranjang'
+      path: '/keranjang'
+      fullPath: '/keranjang'
+      preLoaderRoute: typeof KeranjangRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meja': {
+      id: '/meja'
+      path: '/meja'
+      fullPath: '/meja'
+      preLoaderRoute: typeof MejaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/menu': {
+      id: '/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof MenuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pembayaran': {
+      id: '/pembayaran'
+      path: '/pembayaran'
+      fullPath: '/pembayaran'
+      preLoaderRoute: typeof PembayaranRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -349,6 +467,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStockRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/tables': {
+      id: '/admin/tables'
+      path: '/tables'
+      fullPath: '/admin/tables'
+      preLoaderRoute: typeof AdminTablesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -383,6 +508,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/kasir/stock'
       preLoaderRoute: typeof KasirStockRouteImport
       parentRoute: typeof KasirRoute
+    }
+    '/pesanan/': {
+      id: '/pesanan/'
+      path: '/pesanan'
+      fullPath: '/pesanan/'
+      preLoaderRoute: typeof PesananIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pesanan/$orderId': {
+      id: '/pesanan/$orderId'
+      path: '/pesanan/$orderId'
+      fullPath: '/pesanan/$orderId'
+      preLoaderRoute: typeof PesananOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/menu/': {
       id: '/admin/menu/'
@@ -475,6 +614,7 @@ interface AdminRouteChildren {
   AdminOrdersRoute: typeof AdminOrdersRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRouteWithChildren
   AdminStockRoute: typeof AdminStockRoute
+  AdminTablesRoute: typeof AdminTablesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -485,6 +625,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrdersRoute: AdminOrdersRouteWithChildren,
   AdminReportsRoute: AdminReportsRouteWithChildren,
   AdminStockRoute: AdminStockRoute,
+  AdminTablesRoute: AdminTablesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -511,7 +652,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   KasirRoute: KasirRouteWithChildren,
+  KeranjangRoute: KeranjangRoute,
   LoginRoute: LoginRoute,
+  MejaRoute: MejaRoute,
+  MenuRoute: MenuRoute,
+  PembayaranRoute: PembayaranRoute,
+  PesananOrderIdRoute: PesananOrderIdRoute,
+  PesananIndexRoute: PesananIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

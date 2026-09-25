@@ -46,7 +46,7 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 		paymentStatus: order.pembayaran?.status ?? null,
 		status: order.status,
 		tanggal: order.tanggal.toISOString().slice(0, 10),
-		kasir: order.user.name,
+		kasir: order.user?.name ?? "-",
 	};
 }
 

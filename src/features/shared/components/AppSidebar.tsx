@@ -52,7 +52,7 @@ export function AppSidebar({
 												: "text-neutral-300 hover:text-neutral-400"
 										}`}
 									>
-										<item.icon className="h-5 w-5" />
+										<item.icon className="h-6 w-6" />
 									</button>
 								) : (
 									<button
@@ -62,7 +62,7 @@ export function AppSidebar({
 										aria-label={item.label}
 										className="rounded-xl p-2.5 text-neutral-300 transition hover:text-neutral-400"
 									>
-										<item.icon className="h-5 w-5" />
+										<item.icon className="h-6 w-6" />
 									</button>
 								)}
 							</TooltipTrigger>
@@ -81,7 +81,7 @@ export function AppSidebar({
 								onClick={() => onLogout()}
 								className="rounded-xl p-2.5 text-neutral-300 transition hover:text-neutral-400"
 							>
-								<LogOut className="h-5 w-5" />
+								<LogOut className="h-6 w-6" />
 							</button>
 						</TooltipTrigger>
 						<TooltipContent side="right">Keluar</TooltipContent>

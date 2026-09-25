@@ -1,32 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import {
-	createCategory,
-	deleteCategory,
-	listCategories,
-	updateCategory,
-} from "@/server/category-functions";
+	createMeja,
+	deleteMeja,
+	listMeja,
+	renameMeja,
+} from "@/server/meja-functions";
 
-type Category = { id: number; namaKategori: string };
+type Meja = { id: number; nama: string; lantai: string };
 
-export function CategoriesView() {
-	const [categories, setCategories] = useState<Category[]>([]);
+export function TablesView() {
+	const [tables, setTables] = useState<Meja[]>([]);
 	const [name, setName] = useState("");
-	const [editing, setEditing] = useState<Category | null>(null);
+	const [lantai, setLantai] = useState("Lantai 1");
+	const [editing, setEditing] = useState<Meja | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [loading, setLoading] = useState(true);
 
 	const refresh = useCallback(async () => {
-		setCategories(await listCategories());
+		setTables(await listMeja());
 	}, []);
 
 	useEffect(() => {
 		void refresh()
 			.catch((cause: unknown) =>
-				setError(
-					cause instanceof Error ? cause.message : "Gagal memuat kategori.",
-				),
+				setError(cause instanceof Error ? cause.message : "Gagal memuat meja."),
 			)
 			.finally(() => setLoading(false));
 	}, [refresh]);
@@ -38,38 +37,39 @@ export function CategoriesView() {
 		setError(null);
 		try {
 			if (editing) {
-				await updateCategory({ data: { id: editing.id, namaKategori: name } });
+				await renameMeja({ data: { id: editing.id, nama: name, lantai } });
 			} else {
-				await createCategory({ data: { namaKategori: name } });
+				await createMeja({ data: { nama: name, lantai } });
 			}
 			setName("");
+			setLantai("Lantai 1");
 			setEditing(null);
 			await refresh();
 		} catch (cause) {
 			setError(
-				cause instanceof Error ? cause.message : "Gagal menyimpan kategori.",
+				cause instanceof Error ? cause.message : "Gagal menyimpan meja.",
 			);
 		} finally {
 			setBusy(false);
 		}
 	}
 
-	async function remove(category: Category) {
-		if (!window.confirm(`Hapus kategori ${category.namaKategori}?`)) return;
+	async function remove(meja: Meja) {
+		if (!window.confirm(`Hapus ${meja.nama}?`)) return;
 		setError(null);
 		try {
-			await deleteCategory({ data: { id: category.id } });
+			await deleteMeja({ data: { id: meja.id } });
 			await refresh();
 		} catch (cause) {
 			setError(
-				cause instanceof Error ? cause.message : "Gagal menghapus kategori.",
+				cause instanceof Error ? cause.message : "Gagal menghapus meja.",
 			);
 		}
 	}
 
 	return (
 		<main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-8">
-			<h1 className="text-2xl font-bold">Kategori</h1>
+			<h1 className="text-2xl font-bold">Meja</h1>
 			{error ? (
 				<p
 					role="alert"
@@ -83,14 +83,25 @@ export function CategoriesView() {
 				className="mt-5 flex flex-wrap gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm"
 			>
 				<label className="min-w-0 flex-1">
-					<span className="sr-only">Nama kategori</span>
+					<span className="sr-only">Nama meja</span>
 					<input
 						value={name}
 						onChange={(event) => setName(event.target.value)}
-						maxLength={50}
+						maxLength={20}
 						required
-						placeholder="Contoh: Minuman"
+						placeholder="Contoh: Meja 9"
 						className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-orange-500"
+					/>
+				</label>
+				<label className="min-w-0">
+					<span className="sr-only">Lantai</span>
+					<input
+						value={lantai}
+						onChange={(event) => setLantai(event.target.value)}
+						maxLength={20}
+						required
+						placeholder="Lantai 1"
+						className="w-36 rounded-lg border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-orange-500"
 					/>
 				</label>
 				<button
@@ -98,11 +109,7 @@ export function CategoriesView() {
 					disabled={busy}
 					className="rounded-lg bg-[#F97316] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
 				>
-					{busy
-						? "Menyimpan…"
-						: editing
-							? "Simpan perubahan"
-							: "Tambah kategori"}
+					{busy ? "Menyimpan…" : editing ? "Simpan perubahan" : "Tambah meja"}
 				</button>
 				{editing ? (
 					<button
@@ -110,6 +117,7 @@ export function CategoriesView() {
 						onClick={() => {
 							setEditing(null);
 							setName("");
+							setLantai("Lantai 1");
 						}}
 						className="rounded-lg border border-neutral-200 px-4 py-2.5 text-sm"
 					>
@@ -118,18 +126,24 @@ export function CategoriesView() {
 				) : null}
 			</form>
 			<ul className="mt-4 divide-y divide-neutral-100 rounded-2xl border border-neutral-100 bg-white shadow-sm">
-				{categories.map((category) => (
+				{tables.map((meja) => (
 					<li
-						key={category.id}
+						key={meja.id}
 						className="flex items-center justify-between gap-4 px-4 py-3"
 					>
-						<span className="font-medium">{category.namaKategori}</span>
+						<span className="font-medium">
+							{meja.nama}{" "}
+							<span className="text-sm font-normal text-neutral-500">
+								· {meja.lantai}
+							</span>
+						</span>
 						<div className="flex gap-2">
 							<button
 								type="button"
 								onClick={() => {
-									setEditing(category);
-									setName(category.namaKategori);
+									setEditing(meja);
+									setName(meja.nama);
+									setLantai(meja.lantai);
 								}}
 								className="rounded-md border border-neutral-200 px-3 py-1.5 text-sm"
 							>
@@ -137,7 +151,7 @@ export function CategoriesView() {
 							</button>
 							<button
 								type="button"
-								onClick={() => void remove(category)}
+								onClick={() => void remove(meja)}
 								className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700"
 							>
 								Hapus
@@ -147,14 +161,14 @@ export function CategoriesView() {
 				))}
 				{loading ? (
 					<li className="px-4 py-8 text-center text-sm text-neutral-500">
-						Memuat kategori…
+						Memuat meja…
 					</li>
-				) : categories.length === 0 ? (
+				) : tables.length === 0 ? (
 					<li>
 						<EmptyState
-							variant="category"
-							title="Belum ada kategori"
-							description="Buat kategori seperti Makanan Utama, Appetizer, atau Minuman untuk mengelompokkan menu."
+							variant="table"
+							title="Belum ada meja"
+							description="Tambahkan meja pertama supaya pelanggan bisa memilih tempat sebelum memesan."
 							size="sm"
 							surface="plain"
 							className="px-4 py-8"

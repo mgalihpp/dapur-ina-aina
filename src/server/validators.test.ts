@@ -5,6 +5,7 @@ import {
 	parseOrderInput,
 	parsePaymentInput,
 	parseProductInput,
+	parsePublicOrderInput,
 	parseStockFilterInput,
 } from "./validators";
 
@@ -21,6 +22,37 @@ describe("order boundary validation", () => {
 				],
 			}),
 		).toThrow("Produk yang sama tidak boleh diulang.");
+	});
+});
+
+describe("public order boundary validation", () => {
+	test("accepts a guest payment method and defaults to cash", () => {
+		expect(
+			parsePublicOrderInput({
+				items: [{ productId: 1, quantity: 1 }],
+				meja: "Meja 01",
+				tamu: 2,
+				paymentMethod: "non_tunai",
+			}),
+		).toMatchObject({
+			meja: "Meja 01",
+			tamu: 2,
+			paymentMethod: "non_tunai",
+		});
+		expect(
+			parsePublicOrderInput({
+				items: [{ productId: 1, quantity: 1 }],
+			}),
+		).toMatchObject({ paymentMethod: "tunai" });
+	});
+
+	test("rejects an unknown guest payment method", () => {
+		expect(() =>
+			parsePublicOrderInput({
+				items: [{ productId: 1, quantity: 1 }],
+				paymentMethod: "qris",
+			}),
+		).toThrow("Metode pembayaran tidak valid.");
 	});
 });
 

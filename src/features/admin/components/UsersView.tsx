@@ -6,6 +6,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import {
 	createStaffUser,
 	deleteStaffUser,
@@ -35,17 +36,20 @@ export function UsersView() {
 	const [editing, setEditing] = useState<StaffUser | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
+	const [loading, setLoading] = useState(true);
 
 	const refresh = useCallback(async () => {
 		setUsers(await listStaffUsers());
 	}, []);
 
 	useEffect(() => {
-		void refresh().catch((cause: unknown) =>
-			setError(
-				cause instanceof Error ? cause.message : "Gagal memuat pengguna.",
-			),
-		);
+		void refresh()
+			.catch((cause: unknown) =>
+				setError(
+					cause instanceof Error ? cause.message : "Gagal memuat pengguna.",
+				),
+			)
+			.finally(() => setLoading(false));
 	}, [refresh]);
 
 	function update<Key extends keyof Fields>(key: Key, value: Fields[Key]) {
@@ -245,6 +249,30 @@ export function UsersView() {
 								</td>
 							</tr>
 						))}
+						{loading ? (
+							<tr>
+								<td
+									colSpan={5}
+									className="px-4 py-8 text-center text-sm text-neutral-500"
+								>
+									Memuat pengguna…
+								</td>
+							</tr>
+						) : users.length === 0 ? (
+							<tr>
+								<td colSpan={5} className="p-2">
+									<EmptyState
+										variant="users"
+										title="Belum ada pengguna"
+										description="Tambahkan akun admin atau kasir untuk mulai mengelola restoran."
+										size="sm"
+										surface="plain"
+										width="content"
+										className="min-w-[280px]"
+									/>
+								</td>
+							</tr>
+						) : null}
 					</tbody>
 				</table>
 			</div>

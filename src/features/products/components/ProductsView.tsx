@@ -7,6 +7,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import { listCategories } from "@/server/category-functions";
 import { deleteProduct, listProducts } from "@/server/product-functions";
 import type { AdminProduct, DeleteTarget } from "../types";
@@ -113,11 +114,39 @@ export function ProductsView() {
 						Memuat produk…
 					</p>
 				) : filteredProducts.length === 0 ? (
-					<p className="px-4 py-8 text-center text-sm text-neutral-500">
-						{products.length === 0
-							? "Belum ada produk. Tambahkan produk pertama lewat tombol di atas."
-							: "Tidak ada produk dalam kategori ini."}
-					</p>
+					products.length === 0 ? (
+						<EmptyState
+							variant="menu"
+							title="Belum ada produk"
+							description="Tambahkan produk pertama supaya menu bisa mulai dipesan pelanggan."
+							action={
+								<button
+									type="button"
+									onClick={() => navigate({ to: "/admin/menu/add" })}
+									className="rounded-xl bg-[#F97316] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a]"
+								>
+									Tambah produk
+								</button>
+							}
+							className="m-4"
+						/>
+					) : (
+						<EmptyState
+							variant="search"
+							title="Tidak ada produk di kategori ini"
+							description="Coba pilih kategori lain untuk melihat produk yang tersedia."
+							action={
+								<button
+									type="button"
+									onClick={() => setCategoryId("all")}
+									className="rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-bold text-[var(--sea-ink)] transition hover:bg-neutral-50"
+								>
+									Lihat semua kategori
+								</button>
+							}
+							className="m-4"
+						/>
+					)
 				) : (
 					<ProductTable
 						products={filteredProducts}

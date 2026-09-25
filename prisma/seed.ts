@@ -175,6 +175,32 @@ async function seedCategories(): Promise<Map<string, number>> {
 	return ids;
 }
 
+async function seedMeja(): Promise<void> {
+	const plan: { nama: string; lantai: string }[] = [
+		...Array.from({ length: 5 }, (_, i) => ({
+			nama: `Meja ${i + 1}`,
+			lantai: "Lantai 1",
+		})),
+		...Array.from({ length: 3 }, (_, i) => ({
+			nama: `Meja ${i + 6}`,
+			lantai: "Lantai 2",
+		})),
+	];
+	for (const { nama, lantai } of plan) {
+		await prisma.meja.upsert({
+			where: { nama },
+			create: { nama, lantai },
+			update: { lantai },
+		});
+	}
+	await prisma.meja.deleteMany({
+		where: { nama: { in: ["Meja 9", "Meja 10"] } },
+	});
+	console.log(
+		"meja ready: Meja 1..Meja 5 (Lantai 1), Meja 6..Meja 8 (Lantai 2)",
+	);
+}
+
 async function seedProducts(kategoriIds: Map<string, number>): Promise<void> {
 	await prisma.produk.deleteMany({
 		where: { namaProduk: { in: LEGACY_NAMES } },
@@ -516,6 +542,7 @@ const KASIR_PASSWORD = process.env["KASIR_PASSWORD"] ?? "Kasir123!";
 
 async function main(): Promise<void> {
 	const kategoriIds = await seedCategories();
+	await seedMeja();
 	await seedProducts(kategoriIds);
 	await seedAdmin();
 	const kasirId = await seedKasir();

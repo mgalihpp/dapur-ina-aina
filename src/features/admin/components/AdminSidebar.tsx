@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
+	Armchair,
 	BarChart3,
 	Boxes,
 	ClipboardList,
@@ -8,6 +9,7 @@ import {
 	Tags,
 	Users,
 } from "lucide-react";
+import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import {
 	AppSidebar,
 	type SidebarItem,
@@ -20,6 +22,7 @@ type AdminSidebarProps = {
 		| "orders"
 		| "menu"
 		| "categories"
+		| "tables"
 		| "stock"
 		| "reports"
 		| "users";
@@ -53,6 +56,12 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 			to: "/admin/categories",
 		},
 		{
+			icon: Armchair,
+			label: "Meja",
+			active: active === "tables",
+			to: "/admin/tables",
+		},
+		{
 			icon: Boxes,
 			label: "Stok",
 			active: active === "stock",
@@ -73,6 +82,7 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 	];
 
 	async function logout() {
+		useOrdersStore.getState().reset();
 		await authClient.signOut();
 		await navigate({ to: "/login" });
 	}

@@ -345,6 +345,76 @@ export function parseUpdateProductInput(
 	};
 }
 
+export type MejaInput = {
+	nama: string;
+	lantai: string;
+};
+
+export function parseMejaInput(input: MejaInput): {
+	nama: string;
+	lantai: string;
+} {
+	if (typeof input !== "object" || input === null)
+		throw new Error("Input meja tidak valid.");
+	const nama = typeof input.nama === "string" ? input.nama.trim() : "";
+	const lantai = typeof input.lantai === "string" ? input.lantai.trim() : "";
+	if (!nama) throw new Error("Nama meja wajib diisi.");
+	if (nama.length > 20) throw new Error("Nama meja maksimal 20 karakter.");
+	if (!lantai) throw new Error("Lantai wajib diisi.");
+	if (lantai.length > 20) throw new Error("Nama lantai maksimal 20 karakter.");
+	return { nama, lantai };
+}
+
+export type UpdateMejaInput = MejaInput & {
+	id: string | number;
+};
+
+export function parseUpdateMejaInput(input: UpdateMejaInput) {
+	return { ...parseMejaInput(input), ...parseIdInput(input) };
+}
+
+export type GuestPaymentMethod = "tunai" | "non_tunai";
+
+export type PublicOrderInput = OrderInput & {
+	meja?: string | null;
+	tamu?: number | null;
+	paymentMethod?: string;
+};
+
+export function parsePublicOrderInput(input: PublicOrderInput): {
+	items: { productId: number; quantity: number }[];
+	meja: string | null;
+	tamu: number | null;
+	paymentMethod: GuestPaymentMethod;
+} {
+	const { items } = parseOrderInput(input);
+	if (typeof input !== "object" || input === null || !("items" in input))
+		throw new Error("Input pesanan tidak valid.");
+	const raw = input.meja;
+	let meja: string | null = null;
+	if (raw !== undefined && raw !== null) {
+		if (typeof raw !== "string") throw new Error("Nama meja tidak valid.");
+		const trimmed = raw.trim();
+		if (trimmed) {
+			if (trimmed.length > 20)
+				throw new Error("Nama meja maksimal 20 karakter.");
+			meja = trimmed;
+		}
+	}
+	const rawTamu = input.tamu;
+	let tamu: number | null = null;
+	if (rawTamu !== undefined && rawTamu !== null) {
+		if (typeof rawTamu !== "number" || !Number.isInteger(rawTamu))
+			throw new Error("Jumlah tamu tidak valid.");
+		if (rawTamu < 1 || rawTamu > 20) throw new Error("Jumlah tamu harus 1–20.");
+		tamu = rawTamu;
+	}
+	const paymentMethod = input.paymentMethod ?? "tunai";
+	if (paymentMethod !== "tunai" && paymentMethod !== "non_tunai")
+		throw new Error("Metode pembayaran tidak valid.");
+	return { items, meja, tamu, paymentMethod };
+}
+
 export type DashboardPeriodInput = {
 	period: string;
 };

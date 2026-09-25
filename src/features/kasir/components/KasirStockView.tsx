@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/features/shared/components/EmptyState";
 import { getStockOverview, listStockMoves } from "@/server/stock-functions";
 
 type StockRow = Awaited<ReturnType<typeof getStockOverview>>[number];
@@ -8,6 +9,7 @@ export function KasirStockView() {
 	const [products, setProducts] = useState<StockRow[]>([]);
 	const [moves, setMoves] = useState<StockMove[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
 	useEffect(() => {
 		let active = true;
 		Promise.all([getStockOverview(), listStockMoves({ data: {} })])
@@ -22,6 +24,9 @@ export function KasirStockView() {
 					setError(
 						cause instanceof Error ? cause.message : "Gagal memuat stok.",
 					);
+			})
+			.finally(() => {
+				if (active) setLoading(false);
 			});
 		return () => {
 			active = false;
@@ -30,6 +35,9 @@ export function KasirStockView() {
 	return (
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Stok</h1>
+			{loading ? (
+				<p className="mt-4 text-sm text-neutral-500">Memuat data stok…</p>
+			) : null}
 			{error ? (
 				<p
 					role="alert"
@@ -65,6 +73,21 @@ export function KasirStockView() {
 								</td>
 							</tr>
 						))}
+						{!loading && products.length === 0 ? (
+							<tr>
+								<td colSpan={4} className="p-2">
+									<EmptyState
+										variant="stock"
+										title="Belum ada produk"
+										description="Produk yang tersedia akan muncul setelah admin menambahkannya."
+										size="sm"
+										surface="plain"
+										width="content"
+										className="min-w-[280px]"
+									/>
+								</td>
+							</tr>
+						) : null}
 					</tbody>
 				</table>
 			</div>
@@ -88,13 +111,18 @@ export function KasirStockView() {
 								<td className="px-4 py-3 text-right">{move.quantity}</td>
 							</tr>
 						))}
-						{moves.length === 0 ? (
+						{!loading && moves.length === 0 ? (
 							<tr>
-								<td
-									colSpan={4}
-									className="px-4 py-6 text-center text-sm text-neutral-500"
-								>
-									Belum ada riwayat pergerakan.
+								<td colSpan={4} className="p-2">
+									<EmptyState
+										variant="stock"
+										title="Belum ada riwayat pergerakan"
+										description="Riwayat stok masuk dan keluar akan tampil di sini."
+										size="sm"
+										surface="plain"
+										width="content"
+										className="min-w-[280px]"
+									/>
 								</td>
 							</tr>
 						) : null}
