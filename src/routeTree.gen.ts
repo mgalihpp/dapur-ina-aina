@@ -16,10 +16,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminMenuIndexRouteImport } from './routes/admin.menu.index'
 import { Route as AdminMenuAddRouteImport } from './routes/admin.menu.add'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.index'
 import { Route as AdminOrdersSuccessRouteImport } from './routes/admin.orders.success'
+import { Route as AdminReportsIndexRouteImport } from './routes/admin.reports.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AdminMenuProductIdEditRouteImport } from './routes/admin.menu.$productId.edit'
 
@@ -58,6 +60,11 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMenuIndexRoute = AdminMenuIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -78,6 +85,11 @@ const AdminOrdersSuccessRoute = AdminOrdersSuccessRouteImport.update({
   path: '/success',
   getParentRoute: () => AdminOrdersRoute,
 } as any)
+const AdminReportsIndexRoute = AdminReportsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminReportsRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -96,12 +108,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin/menu': typeof AdminMenuRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteWithChildren
+  '/admin/reports': typeof AdminReportsRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
   '/admin/orders/success': typeof AdminOrdersSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu/': typeof AdminMenuIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/admin/reports/': typeof AdminReportsIndexRoute
   '/admin/menu/$productId/edit': typeof AdminMenuProductIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -114,6 +128,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu': typeof AdminMenuIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
+  '/admin/reports': typeof AdminReportsIndexRoute
   '/admin/menu/$productId/edit': typeof AdminMenuProductIdEditRoute
 }
 export interface FileRoutesById {
@@ -124,12 +139,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/menu': typeof AdminMenuRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteWithChildren
+  '/admin/reports': typeof AdminReportsRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
   '/admin/orders/success': typeof AdminOrdersSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu/': typeof AdminMenuIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/admin/reports/': typeof AdminReportsIndexRoute
   '/admin/menu/$productId/edit': typeof AdminMenuProductIdEditRoute
 }
 export interface FileRouteTypes {
@@ -141,12 +158,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/reports'
     | '/admin/'
     | '/admin/menu/add'
     | '/admin/orders/success'
     | '/api/auth/$'
     | '/admin/menu/'
     | '/admin/orders/'
+    | '/admin/reports/'
     | '/admin/menu/$productId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -159,6 +178,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/reports'
     | '/admin/menu/$productId/edit'
   id:
     | '__root__'
@@ -168,12 +188,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/reports'
     | '/admin/'
     | '/admin/menu/add'
     | '/admin/orders/success'
     | '/api/auth/$'
     | '/admin/menu/'
     | '/admin/orders/'
+    | '/admin/reports/'
     | '/admin/menu/$productId/edit'
   fileRoutesById: FileRoutesById
 }
@@ -236,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/menu/': {
       id: '/admin/menu/'
       path: '/'
@@ -263,6 +292,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/orders/success'
       preLoaderRoute: typeof AdminOrdersSuccessRouteImport
       parentRoute: typeof AdminOrdersRoute
+    }
+    '/admin/reports/': {
+      id: '/admin/reports/'
+      path: '/'
+      fullPath: '/admin/reports/'
+      preLoaderRoute: typeof AdminReportsIndexRouteImport
+      parentRoute: typeof AdminReportsRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -311,15 +347,29 @@ const AdminOrdersRouteWithChildren = AdminOrdersRoute._addFileChildren(
   AdminOrdersRouteChildren,
 )
 
+interface AdminReportsRouteChildren {
+  AdminReportsIndexRoute: typeof AdminReportsIndexRoute
+}
+
+const AdminReportsRouteChildren: AdminReportsRouteChildren = {
+  AdminReportsIndexRoute: AdminReportsIndexRoute,
+}
+
+const AdminReportsRouteWithChildren = AdminReportsRoute._addFileChildren(
+  AdminReportsRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminMenuRoute: typeof AdminMenuRouteWithChildren
   AdminOrdersRoute: typeof AdminOrdersRouteWithChildren
+  AdminReportsRoute: typeof AdminReportsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminMenuRoute: AdminMenuRouteWithChildren,
   AdminOrdersRoute: AdminOrdersRouteWithChildren,
+  AdminReportsRoute: AdminReportsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

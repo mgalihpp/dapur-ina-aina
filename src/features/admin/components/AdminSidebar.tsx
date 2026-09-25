@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
+	BarChart3,
 	Bell,
 	ClipboardList,
 	Home,
@@ -16,7 +17,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 type AdminSidebarProps = {
-	active?: "dashboard" | "orders" | "menu";
+	active?: "dashboard" | "orders" | "menu" | "reports";
 };
 
 export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
@@ -41,6 +42,12 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 			label: "Menu",
 			to: "/admin/menu",
 			active: active === "menu",
+		},
+		{
+			icon: BarChart3,
+			label: "Laporan",
+			to: "/admin/reports",
+			active: active === "reports",
 		},
 		{ icon: Bell, label: "Notifikasi" },
 		{ icon: Users, label: "Pelanggan" },

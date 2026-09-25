@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { KasirEmptyView } from "@/features/kasir";
-import { ensureSession } from "@/lib/auth-functions";
 import { userRoleOf } from "@/lib/roles";
+import { ensureSession } from "@/server/auth-functions";
 
 export const Route = createFileRoute("/kasir")({
 	beforeLoad: async () => {

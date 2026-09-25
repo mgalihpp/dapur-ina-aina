@@ -57,13 +57,14 @@ The common defect here is fixing one role or one state and missing the rest. Bef
 
 ## How it works
 
-Browser → file routes in `src/routes/` → server functions (`createServerFn` in `src/lib/auth-functions.ts`) → Prisma (`src/lib/prisma.ts`, singleton via `globalThis`) → MySQL `db_dapur_ina_aina`. Auth is Better-Auth email+password with Prisma adapter (`src/lib/auth.ts`); session cookie via `tanstackStartCookies()`. Route guards call `ensureSession()` / `getSession()` in `beforeLoad` and branch on `userRoleOf()` (`src/lib/roles.ts`).
+Browser → file routes in `src/routes/` → server functions (`createServerFn` in `src/server/*-functions.ts`) → Prisma (`src/lib/prisma.ts`, singleton via `globalThis`) → MySQL `db_dapur_ina_aina`. Auth is Better-Auth email+password with Prisma adapter (`src/lib/auth.ts`); session cookie via `tanstackStartCookies()`. Route guards call `ensureSession()` / `getSession()` in `beforeLoad` and branch on `userRoleOf()` (`src/lib/roles.ts`).
 
 ## Where code lives
 
 - `PRD-Dapur-Ina-Aina.md` — binding spec: roles, FR-*, BR-1..BR-7, DDL, milestones.
 - `src/routes/` — file-based routes. `__root.tsx` is the shell (Header/Footer/theme); `login.tsx` handles email login + role redirect; `admin.tsx` / `kasir.tsx` are stubs with role guards; `api/auth/$.ts` is the Better-Auth handler.
-- `src/lib/` — `auth.ts` (Better-Auth config, `username`+`role` additional fields, `role` is `input:false`), `auth-functions.ts` (server fns), `prisma.ts`, `roles.ts`, `utils.ts` (cn).
+- `src/lib/` — `auth.ts` (Better-Auth config, `username`+`role` additional fields, `role` is `input:false`), `prisma.ts`, `roles.ts`, `utils.ts` (cn).
+- `src/server/` — `createServerFn` server functions pakai `.validator()` (bukan `.inputValidator()` yang deprecated). `guards.ts` (ensureAdmin/ensureStaff), `validators.ts` (parse boundary tanpa `any`/`unknown`/`as`), `periode.ts` (logika periode murni). Mapper satu-pakai (`toRow`, dsb.) tetap lokal di tiap file.
 - `prisma/` — `schema.prisma` (MySQL, `@@map` to `tb_*`, `Restrict` on kategori/produk deletes, `Cascade` pesanan→detail/pembayaran, `Pembayaran.pesananId @unique`), `seed.ts`, `migrations/`.
 - `src/components/ui/` — shadcn radix-luma components. `components.json` aliases (`@/` → `src/`); `tsconfig.json` also maps `#/*` → `src/*` and `package.json` `imports` mirrors it.
 - `biome.json` — tabs, double quotes, recommended lint, organize-imports on, respects `.gitignore`, ignores `dist/`.

@@ -3,8 +3,8 @@ import { AtSign, Lock } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { getSession } from "@/lib/auth-functions";
 import { userRoleOf } from "@/lib/roles";
+import { getSession } from "@/server/auth-functions";
 import { isValidEmail } from "../lib/validation";
 
 export function LoginForm() {

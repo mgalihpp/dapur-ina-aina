@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import type { AdminProduct } from "@/features/products";
 import { ProductFormView } from "@/features/products";
-import { PRODUCTS_MOCK } from "@/features/products/data/products-mock";
+import { getProduct } from "@/server/product-functions";
 
 export const Route = createFileRoute("/admin/menu/$productId/edit")({
 	component: EditProductRoute,
@@ -9,9 +11,36 @@ export const Route = createFileRoute("/admin/menu/$productId/edit")({
 function EditProductRoute() {
 	const { productId } = Route.useParams();
 	const navigate = useNavigate();
-	const product = PRODUCTS_MOCK.find((row) => row.id === productId);
+	const [product, setProduct] = useState<AdminProduct | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [notFound, setNotFound] = useState(false);
 
-	if (!product) {
+	useEffect(() => {
+		let alive = true;
+		getProduct({ data: { id: Number(productId) } })
+			.then((row) => {
+				if (alive) setProduct(row);
+			})
+			.catch(() => {
+				if (alive) setNotFound(true);
+			})
+			.finally(() => {
+				if (alive) setLoading(false);
+			});
+		return () => {
+			alive = false;
+		};
+	}, [productId]);
+
+	if (loading) {
+		return (
+			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
+				<p className="text-sm text-neutral-500">Memuat produk…</p>
+			</div>
+		);
+	}
+
+	if (notFound || !product) {
 		return (
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
 				<h1 className="text-xl font-bold text-neutral-900">Ubah Produk</h1>

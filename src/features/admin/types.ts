@@ -1,7 +1,7 @@
 export type DashboardPeriod = "today" | "week" | "month" | "year";
 
 export type IncomeSlice = {
-	label: "Foodies" | "Cold Drink" | "Others";
+	label: string;
 	value: number;
 	color: string;
 };

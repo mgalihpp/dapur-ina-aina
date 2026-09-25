@@ -110,6 +110,7 @@ model Produk {
   namaProduk String          @db.VarChar(100)
   harga      Decimal         @db.Decimal(10, 2)
   stok       Int             @default(0)
+  gambar     String?         @db.VarChar(255)
   kategoriId Int
   kategori   Kategori        @relation(fields: [kategoriId], references: [id], onDelete: Restrict)
   detail     DetailPesanan[]

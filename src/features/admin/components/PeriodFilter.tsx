@@ -1,5 +1,11 @@
-import { PERIODS } from "../data/dashboard-mock";
 import type { DashboardPeriod } from "../types";
+
+const PERIODS: { id: DashboardPeriod; label: string }[] = [
+	{ id: "today", label: "Hari Ini" },
+	{ id: "week", label: "Minggu Ini" },
+	{ id: "month", label: "Bulan Ini" },
+	{ id: "year", label: "Tahun Ini" },
+];
 
 type PeriodFilterProps = {
 	value: DashboardPeriod;

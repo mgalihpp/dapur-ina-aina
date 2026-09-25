@@ -1,13 +1,15 @@
 export type ProductStatus = "In Stock" | "Out of Stock";
 
 export type AdminProduct = {
-	id: string;
+	id: number;
 	name: string;
 	image: string;
 	status: ProductStatus;
 	productId: string;
 	quantity: number;
 	price: number;
+	kategoriId: number;
+	kategori: string;
 };
 
 export type DeleteTarget = AdminProduct | null;
@@ -16,12 +18,10 @@ export type ProductFormMode = "add" | "edit";
 
 export type ProductFormValues = {
 	name: string;
-	unit: string;
-	category: string;
+	kategoriId: string;
 	price: string;
-	status: "" | ProductStatus;
-	productId: string;
-	imagePreview: string | null;
+	stok: string;
+	gambar: string;
 };
 
 export type ImageSource = "capture" | "library";

@@ -2,12 +2,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ImagePlus } from "lucide-react";
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
-import type {
-	AdminProduct,
-	ImageSource,
-	ProductFormMode,
-	ProductFormValues,
-} from "../types";
+import {
+	createProduct,
+	listKategori,
+	updateProduct,
+} from "@/server/product-functions";
+import type { AdminProduct, ImageSource, ProductFormMode } from "../types";
 import { ImageSourceModal } from "./ImageSourceModal";
 
 type ImagePickerState =
@@ -15,7 +15,15 @@ type ImagePickerState =
 	| { kind: "pickerOpen"; preview: string | null }
 	| { kind: "previewSet"; preview: string };
 
-type TextFields = Omit<ProductFormValues, "imagePreview">;
+type Fields = {
+	name: string;
+	kategoriId: string;
+	price: string;
+	stok: string;
+	gambar: string;
+};
+
+type Kategori = { id: number; namaKategori: string };
 
 type ProductFormViewProps = {
 	mode: ProductFormMode;
@@ -34,20 +42,42 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 	const libraryRef = useRef<HTMLInputElement>(null);
 	const objectUrlRef = useRef<string | null>(null);
 
-	const [fields, setFields] = useState<TextFields>(() => ({
+	const [fields, setFields] = useState<Fields>(() => ({
 		name: initial?.name ?? "",
-		unit: "",
-		category: "",
+		kategoriId: initial ? String(initial.kategoriId) : "",
 		price: initial ? String(initial.price) : "",
-		status: initial?.status ?? "",
-		productId: initial?.productId ?? "",
+		stok: initial ? String(initial.quantity) : "",
+		gambar: initial?.image ?? "",
 	}));
+	const [kategoris, setKategoris] = useState<Kategori[]>([]);
 	const [picker, setPicker] = useState<ImagePickerState>(() =>
 		initial
 			? { kind: "previewSet", preview: initial.image }
 			: { kind: "pickerClosed" },
 	);
-	const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
+	const [errors, setErrors] = useState<{
+		name?: string;
+		price?: string;
+		stok?: string;
+		kategori?: string;
+		submit?: string;
+	}>({});
+	const [saving, setSaving] = useState(false);
+
+	useEffect(() => {
+		let alive = true;
+		listKategori()
+			.then((rows) => {
+				if (alive) setKategoris(rows);
+			})
+			.catch(() => {
+				if (alive)
+					setErrors((p) => ({ ...p, kategori: "Gagal memuat kategori." }));
+			});
+		return () => {
+			alive = false;
+		};
+	}, []);
 
 	useEffect(
 		() => () => {
@@ -59,10 +89,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 	const preview = picker.kind === "pickerClosed" ? null : picker.preview;
 	const title = mode === "add" ? "Tambah Produk" : "Ubah Produk";
 
-	function updateField<Key extends keyof TextFields>(
-		key: Key,
-		value: TextFields[Key],
-	) {
+	function updateField<Key extends keyof Fields>(key: Key, value: Fields[Key]) {
 		setFields((prev) => ({ ...prev, [key]: value }));
 	}
 
@@ -106,17 +133,47 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		setPicker({ kind: "previewSet", preview: url });
 	}
 
-	function handleSubmit(event: FormEvent) {
+	async function handleSubmit(event: FormEvent) {
 		event.preventDefault();
-		const next: { name?: string; price?: string } = {};
+		const next: typeof errors = {};
 		if (!fields.name.trim()) next.name = "Nama produk wajib diisi.";
 		const price = Number(fields.price);
 		if (!fields.price.trim() || !Number.isFinite(price) || price <= 0) {
 			next.price = "Harga harus berupa angka lebih dari 0.";
 		}
+		const stok = Number(fields.stok);
+		if (!fields.stok.trim() || !Number.isInteger(stok) || stok < 0) {
+			next.stok = "Stok harus bilangan bulat >= 0.";
+		}
+		if (!fields.kategoriId) next.kategori = "Kategori wajib dipilih.";
 		setErrors(next);
 		if (Object.keys(next).length > 0) return;
-		navigate({ to: "/admin/menu" });
+		setSaving(true);
+		try {
+			const payload = {
+				namaProduk: fields.name.trim(),
+				harga: price,
+				stok,
+				kategoriId: Number(fields.kategoriId),
+				gambar:
+					fields.gambar.trim() ||
+					(preview && !preview.startsWith("blob:") ? preview : null),
+			};
+			if (mode === "add") {
+				await createProduct({ data: payload });
+			} else {
+				if (!initial) throw new Error("Produk tidak ditemukan");
+				await updateProduct({ data: { id: initial.id, ...payload } });
+			}
+			navigate({ to: "/admin/menu" });
+		} catch (e) {
+			setErrors((p) => ({
+				...p,
+				submit: e instanceof Error ? e.message : "Gagal menyimpan produk",
+			}));
+		} finally {
+			setSaving(false);
+		}
 	}
 
 	return (
@@ -155,7 +212,11 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 					</button>
 				</div>
 
-				<form onSubmit={handleSubmit} className="mt-6" noValidate>
+				<form
+					onSubmit={(e) => void handleSubmit(e)}
+					className="mt-6"
+					noValidate
+				>
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<div>
 							<label
@@ -169,7 +230,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 								type="text"
 								value={fields.name}
 								onChange={(event) => updateField("name", event.target.value)}
-								placeholder="Grill Sandwich"
+								placeholder="Nasi Goreng Spesial"
 								className={fieldClass(Boolean(errors.name))}
 							/>
 							{errors.name && (
@@ -178,37 +239,29 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 						</div>
 						<div>
 							<label
-								htmlFor="product-unit"
-								className="mb-1 block text-[13px] font-bold text-neutral-900"
-							>
-								Satuan Produk :
-							</label>
-							<input
-								id="product-unit"
-								type="text"
-								value={fields.unit}
-								onChange={(event) => updateField("unit", event.target.value)}
-								placeholder="Pcs"
-								className={fieldClass(false)}
-							/>
-						</div>
-						<div>
-							<label
 								htmlFor="product-category"
 								className="mb-1 block text-[13px] font-bold text-neutral-900"
 							>
 								Kategori :
 							</label>
-							<input
+							<select
 								id="product-category"
-								type="text"
-								value={fields.category}
+								value={fields.kategoriId}
 								onChange={(event) =>
-									updateField("category", event.target.value)
+									updateField("kategoriId", event.target.value)
 								}
-								placeholder="Makanan Utama"
-								className={fieldClass(false)}
-							/>
+								className={`${fieldClass(Boolean(errors.kategori))} bg-white`}
+							>
+								<option value="">Pilih Kategori</option>
+								{kategoris.map((k) => (
+									<option key={k.id} value={k.id}>
+										{k.namaKategori}
+									</option>
+								))}
+							</select>
+							{errors.kategori && (
+								<p className="mt-1 text-xs text-red-500">{errors.kategori}</p>
+							)}
 						</div>
 						<div>
 							<label
@@ -223,7 +276,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 								inputMode="decimal"
 								value={fields.price}
 								onChange={(event) => updateField("price", event.target.value)}
-								placeholder="20000"
+								placeholder="25000"
 								className={fieldClass(Boolean(errors.price))}
 							/>
 							{errors.price && (
@@ -232,52 +285,60 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 						</div>
 						<div>
 							<label
-								htmlFor="product-status"
+								htmlFor="product-stok"
 								className="mb-1 block text-[13px] font-bold text-neutral-900"
 							>
-								Status :
-							</label>
-							<select
-								id="product-status"
-								value={fields.status}
-								onChange={(event) =>
-									updateField(
-										"status",
-										event.target.value as TextFields["status"],
-									)
-								}
-								className={`${fieldClass(false)} bg-white`}
-							>
-								<option value="">Pilih Status</option>
-								<option value="In Stock">Tersedia</option>
-								<option value="Out of Stock">Stok Habis</option>
-							</select>
-						</div>
-						<div>
-							<label
-								htmlFor="product-id"
-								className="mb-1 block text-[13px] font-bold text-neutral-900"
-							>
-								ID Produk :
+								Stok :
 							</label>
 							<input
-								id="product-id"
+								id="product-stok"
 								type="text"
-								value={fields.productId}
-								onChange={(event) =>
-									updateField("productId", event.target.value)
-								}
-								placeholder="123456789"
+								inputMode="numeric"
+								value={fields.stok}
+								onChange={(event) => updateField("stok", event.target.value)}
+								placeholder="40"
+								className={fieldClass(Boolean(errors.stok))}
+							/>
+							{errors.stok && (
+								<p className="mt-1 text-xs text-red-500">{errors.stok}</p>
+							)}
+						</div>
+						<div className="md:col-span-2">
+							<label
+								htmlFor="product-gambar"
+								className="mb-1 block text-[13px] font-bold text-neutral-900"
+							>
+								Gambar (path) :
+							</label>
+							<input
+								id="product-gambar"
+								type="text"
+								value={fields.gambar}
+								onChange={(event) => {
+									updateField("gambar", event.target.value);
+									if (event.target.value.trim())
+										setPicker({
+											kind: "previewSet",
+											preview: event.target.value.trim(),
+										});
+								}}
+								placeholder="/menu/nasi-goreng-spesial.jpg"
 								className={fieldClass(false)}
 							/>
 						</div>
 					</div>
+					{errors.submit && (
+						<p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+							{errors.submit}
+						</p>
+					)}
 					<div className="mt-6 flex justify-center">
 						<button
 							type="submit"
-							className="rounded-lg bg-[#F97316] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a]"
+							disabled={saving}
+							className="rounded-lg bg-[#F97316] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a] disabled:opacity-50"
 						>
-							Simpan Produk
+							{saving ? "Menyimpan…" : "Simpan Produk"}
 						</button>
 					</div>
 				</form>

@@ -24,7 +24,7 @@ type AppSidebarProps = {
 
 export function AppSidebar({
 	items,
-	logoSrc = "/logo.jfif",
+	logoSrc = "/logo.png",
 	logoAlt = "Dapur Ina Aina",
 	onNavigate,
 	onLogout,

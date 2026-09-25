@@ -7,7 +7,9 @@ export function AdminShell() {
 		? "menu"
 		: pathname.startsWith("/admin/orders")
 			? "orders"
-			: "dashboard";
+			: pathname.startsWith("/admin/reports")
+				? "reports"
+				: "dashboard";
 
 	return (
 		<div className="flex h-dvh overflow-hidden bg-[#F5F6F8] text-neutral-900">

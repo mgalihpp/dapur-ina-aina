@@ -3,8 +3,8 @@ export { InvoicePrintedIllustration } from "./components/InvoicePrintedIllustrat
 export { OrderDetail } from "./components/OrderDetail";
 export { OrderDetailEmpty } from "./components/OrderDetailEmpty";
 export { OrderList } from "./components/OrderList";
+export { OrderListEmpty } from "./components/OrderListEmpty";
 export { OrdersView } from "./components/OrdersView";
-export { ORDER_DETAILS, ORDERS } from "./data/orders-mock";
 export type {
 	OrderDetail as OrderDetailData,
 	OrderItem,
