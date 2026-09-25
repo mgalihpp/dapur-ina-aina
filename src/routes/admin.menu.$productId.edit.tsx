@@ -1,8 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import type { AdminProduct } from "@/features/products";
 import { ProductFormView } from "@/features/products";
-import { getProduct } from "@/server/product-functions";
+import { useProductDetail } from "@/features/products/queries";
 
 export const Route = createFileRoute("/admin/menu/$productId/edit")({
 	component: EditProductRoute,
@@ -11,28 +9,9 @@ export const Route = createFileRoute("/admin/menu/$productId/edit")({
 function EditProductRoute() {
 	const { productId } = Route.useParams();
 	const navigate = useNavigate();
-	const [product, setProduct] = useState<AdminProduct | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [notFound, setNotFound] = useState(false);
+	const productQuery = useProductDetail(productId);
 
-	useEffect(() => {
-		let alive = true;
-		getProduct({ data: { id: Number(productId) } })
-			.then((row) => {
-				if (alive) setProduct(row);
-			})
-			.catch(() => {
-				if (alive) setNotFound(true);
-			})
-			.finally(() => {
-				if (alive) setLoading(false);
-			});
-		return () => {
-			alive = false;
-		};
-	}, [productId]);
-
-	if (loading) {
+	if (productQuery.isPending) {
 		return (
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
 				<p className="text-sm text-neutral-500">Memuat produk…</p>
@@ -40,7 +19,7 @@ function EditProductRoute() {
 		);
 	}
 
-	if (notFound || !product) {
+	if (productQuery.isError || !productQuery.data) {
 		return (
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
 				<h1 className="text-xl font-bold text-neutral-900">Ubah Produk</h1>
@@ -58,5 +37,5 @@ function EditProductRoute() {
 		);
 	}
 
-	return <ProductFormView mode="edit" initial={product} />;
+	return <ProductFormView mode="edit" initial={productQuery.data} />;
 }

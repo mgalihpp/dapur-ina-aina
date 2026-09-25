@@ -1,85 +1,78 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import {
-	createCategory,
-	deleteCategory,
-	listCategories,
-	updateCategory,
-} from "@/server/category-functions";
+	useCreateCategory,
+	useDeleteCategory,
+	useUpdateCategory,
+} from "../mutations";
+import { useCategories } from "../queries";
 
 type Category = { id: number; namaKategori: string };
 
 export function CategoriesView() {
-	const [categories, setCategories] = useState<Category[]>([]);
+	const categoriesQuery = useCategories();
+	const createCategory = useCreateCategory();
+	const updateCategory = useUpdateCategory();
+	const deleteCategory = useDeleteCategory();
+
 	const [name, setName] = useState("");
 	const [editing, setEditing] = useState<Category | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [busy, setBusy] = useState(false);
-	const [loading, setLoading] = useState(true);
 
-	const refresh = useCallback(async () => {
-		setCategories(await listCategories());
-	}, []);
+	const categories = categoriesQuery.data ?? [];
+	const loading = categoriesQuery.isPending;
+	const busy = createCategory.isPending || updateCategory.isPending;
+	const loadError = categoriesQuery.isError
+		? queryErrorMessage(categoriesQuery.error, "Gagal memuat kategori.")
+		: null;
+	const notice = error ?? loadError;
 
-	useEffect(() => {
-		void refresh()
-			.catch((cause: unknown) =>
-				setError(
-					cause instanceof Error ? cause.message : "Gagal memuat kategori.",
-				),
-			)
-			.finally(() => setLoading(false));
-	}, [refresh]);
-
-	async function save(event: React.FormEvent<HTMLFormElement>) {
+	function save(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (busy) return;
-		setBusy(true);
 		setError(null);
-		try {
-			if (editing) {
-				await updateCategory({ data: { id: editing.id, namaKategori: name } });
-			} else {
-				await createCategory({ data: { namaKategori: name } });
-			}
+		const onSuccess = () => {
 			setName("");
 			setEditing(null);
-			await refresh();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal menyimpan kategori.",
+		};
+		const onError = (cause: unknown) =>
+			setError(mutationErrorMessage(cause, "Gagal menyimpan kategori."));
+		if (editing) {
+			updateCategory.mutate(
+				{ id: editing.id, namaKategori: name },
+				{ onSuccess, onError },
 			);
-		} finally {
-			setBusy(false);
+		} else {
+			createCategory.mutate({ namaKategori: name }, { onSuccess, onError });
 		}
 	}
 
-	async function remove(category: Category) {
+	function remove(category: Category) {
 		if (!window.confirm(`Hapus kategori ${category.namaKategori}?`)) return;
 		setError(null);
-		try {
-			await deleteCategory({ data: { id: category.id } });
-			await refresh();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal menghapus kategori.",
-			);
-		}
+		deleteCategory.mutate(
+			{ id: category.id },
+			{
+				onError: (cause) =>
+					setError(mutationErrorMessage(cause, "Gagal menghapus kategori.")),
+			},
+		);
 	}
 
 	return (
 		<main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Kategori</h1>
-			{error ? (
+			{notice ? (
 				<p
 					role="alert"
 					className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
 				>
-					{error}
+					{notice}
 				</p>
 			) : null}
 			<form
-				onSubmit={(event) => void save(event)}
+				onSubmit={(event) => save(event)}
 				className="mt-5 flex flex-wrap gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm"
 			>
 				<label className="min-w-0 flex-1">
@@ -137,7 +130,7 @@ export function CategoriesView() {
 							</button>
 							<button
 								type="button"
-								onClick={() => void remove(category)}
+								onClick={() => remove(category)}
 								className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700"
 							>
 								Hapus

@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -7,64 +7,52 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useCategories } from "@/features/admin/queries";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { listCategories } from "@/server/category-functions";
-import { deleteProduct, listProducts } from "@/server/product-functions";
-import type { AdminProduct, DeleteTarget } from "../types";
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
+import { useDeleteProduct } from "../mutations";
+import { useAdminProducts } from "../queries";
+import type { DeleteTarget } from "../types";
 import { DeleteProductModal } from "./DeleteProductModal";
 import { ProductTable } from "./ProductTable";
 
 export function ProductsView() {
 	const navigate = useNavigate();
-	const [products, setProducts] = useState<AdminProduct[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const productsQuery = useAdminProducts();
+	const categoriesQuery = useCategories();
+	const deleteProduct = useDeleteProduct();
+
 	const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
-	const [deleting, setDeleting] = useState(false);
-	const [categories, setCategories] = useState<
-		{ id: number; namaKategori: string }[]
-	>([]);
+	const [error, setError] = useState<string | null>(null);
 	const [categoryId, setCategoryId] = useState("all");
 
-	useEffect(() => {
-		let alive = true;
-		Promise.all([listProducts(), listCategories()])
-			.then(([rows, categoryRows]) => {
-				if (alive) {
-					setProducts(rows);
-					setCategories(categoryRows);
-				}
-			})
-			.catch((e: unknown) => {
-				if (alive)
-					setError(e instanceof Error ? e.message : "Gagal memuat produk");
-			})
-			.finally(() => {
-				if (alive) setLoading(false);
-			});
-		return () => {
-			alive = false;
-		};
-	}, []);
+	const products = productsQuery.data ?? [];
+	const categories = categoriesQuery.data ?? [];
+	const loading = productsQuery.isPending || categoriesQuery.isPending;
+	const deleting = deleteProduct.isPending;
+	const loadError = productsQuery.isError
+		? queryErrorMessage(productsQuery.error, "Gagal memuat produk")
+		: categoriesQuery.isError
+			? queryErrorMessage(categoriesQuery.error, "Gagal memuat kategori")
+			: null;
+	const notice = error ?? loadError;
 
 	const filteredProducts =
 		categoryId === "all"
 			? products
 			: products.filter((product) => String(product.kategoriId) === categoryId);
 
-	async function confirmDelete() {
+	function confirmDelete() {
 		if (!deleteTarget || deleting) return;
-		setDeleting(true);
 		setError(null);
-		try {
-			await deleteProduct({ data: { id: deleteTarget.id } });
-			setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-			setDeleteTarget(null);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Gagal menghapus produk");
-		} finally {
-			setDeleting(false);
-		}
+		deleteProduct.mutate(
+			{ id: deleteTarget.id },
+			{
+				onSuccess: () => setDeleteTarget(null),
+				onError: (cause) =>
+					setError(mutationErrorMessage(cause, "Gagal menghapus produk")),
+			},
+		);
 	}
 
 	return (
@@ -79,9 +67,9 @@ export function ProductsView() {
 					+ Tambah Produk
 				</button>
 			</div>
-			{error ? (
+			{notice ? (
 				<p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-					{error}
+					{notice}
 				</p>
 			) : null}
 			<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border border-neutral-100 bg-white px-4 py-3">
@@ -162,7 +150,7 @@ export function ProductsView() {
 			</div>
 			<DeleteProductModal
 				product={deleteTarget}
-				onConfirm={() => void confirmDelete()}
+				onConfirm={() => confirmDelete()}
 				onCancel={() => setDeleteTarget(null)}
 			/>
 		</div>

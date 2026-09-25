@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -7,14 +7,21 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/features/shared/components/EmptyState";
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import {
-	createStaffUser,
-	deleteStaffUser,
-	listStaffUsers,
-	updateStaffUser,
-} from "@/server/user-functions";
+	useCreateStaffUser,
+	useDeleteStaffUser,
+	useUpdateStaffUser,
+} from "../mutations";
+import { useStaffUsers } from "../queries";
 
-type StaffUser = Awaited<ReturnType<typeof listStaffUsers>>[number];
+type StaffUser = {
+	id: string;
+	name: string;
+	email: string;
+	username: string | null;
+	role: "admin" | "kasir";
+};
 type Fields = {
 	name: string;
 	email: string;
@@ -31,26 +38,22 @@ const EMPTY: Fields = {
 };
 
 export function UsersView() {
-	const [users, setUsers] = useState<StaffUser[]>([]);
+	const usersQuery = useStaffUsers();
+	const createUser = useCreateStaffUser();
+	const updateUser = useUpdateStaffUser();
+	const deleteUser = useDeleteStaffUser();
+
 	const [fields, setFields] = useState<Fields>(EMPTY);
 	const [editing, setEditing] = useState<StaffUser | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [busy, setBusy] = useState(false);
-	const [loading, setLoading] = useState(true);
 
-	const refresh = useCallback(async () => {
-		setUsers(await listStaffUsers());
-	}, []);
-
-	useEffect(() => {
-		void refresh()
-			.catch((cause: unknown) =>
-				setError(
-					cause instanceof Error ? cause.message : "Gagal memuat pengguna.",
-				),
-			)
-			.finally(() => setLoading(false));
-	}, [refresh]);
+	const users = usersQuery.data ?? [];
+	const loading = usersQuery.isPending;
+	const busy = createUser.isPending || updateUser.isPending;
+	const loadError = usersQuery.isError
+		? queryErrorMessage(usersQuery.error, "Gagal memuat pengguna.")
+		: null;
+	const notice = error ?? loadError;
 
 	function update<Key extends keyof Fields>(key: Key, value: Fields[Key]) {
 		setFields((current) => ({ ...current, [key]: value }));
@@ -73,54 +76,45 @@ export function UsersView() {
 		setFields(EMPTY);
 	}
 
-	async function save(event: React.FormEvent<HTMLFormElement>) {
+	function save(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (busy) return;
-		setBusy(true);
 		setError(null);
-		try {
-			if (editing) {
-				await updateStaffUser({ data: { id: editing.id, ...fields } });
-			} else {
-				await createStaffUser({ data: fields });
-			}
-			resetForm();
-			await refresh();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal menyimpan pengguna.",
-			);
-		} finally {
-			setBusy(false);
+		const onSuccess = () => resetForm();
+		const onError = (cause: unknown) =>
+			setError(mutationErrorMessage(cause, "Gagal menyimpan pengguna."));
+		if (editing) {
+			updateUser.mutate({ id: editing.id, ...fields }, { onSuccess, onError });
+		} else {
+			createUser.mutate(fields, { onSuccess, onError });
 		}
 	}
 
-	async function remove(user: StaffUser) {
+	function remove(user: StaffUser) {
 		if (!window.confirm(`Hapus akun ${user.name}?`)) return;
 		setError(null);
-		try {
-			await deleteStaffUser({ data: { id: user.id } });
-			await refresh();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal menghapus pengguna.",
-			);
-		}
+		deleteUser.mutate(
+			{ id: user.id },
+			{
+				onError: (cause) =>
+					setError(mutationErrorMessage(cause, "Gagal menghapus pengguna.")),
+			},
+		);
 	}
 
 	return (
 		<main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Pengguna</h1>
-			{error ? (
+			{notice ? (
 				<p
 					role="alert"
 					className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
 				>
-					{error}
+					{notice}
 				</p>
 			) : null}
 			<form
-				onSubmit={(event) => void save(event)}
+				onSubmit={(event) => save(event)}
 				className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3"
 			>
 				<label className="text-sm font-medium">
@@ -240,7 +234,7 @@ export function UsersView() {
 										</button>
 										<button
 											type="button"
-											onClick={() => void remove(user)}
+											onClick={() => remove(user)}
 											className="rounded-md border border-red-200 px-3 py-1.5 text-red-700"
 										>
 											Hapus

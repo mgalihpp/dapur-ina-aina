@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { getDashboard } from "@/server/dashboard-functions";
-import { getStockOverview } from "@/server/stock-functions";
+import { queryErrorMessage } from "@/lib/query-errors";
+import { useAdminDashboard, useStockOverview } from "../queries";
 import type { DashboardPeriod, PeriodData } from "../types";
 import { BestDishesList } from "./BestDishesList";
 import { DailySellingChart } from "./DailySellingChart";
@@ -13,65 +13,19 @@ import { TotalIncomeCard } from "./TotalIncomeCard";
 
 export function AdminDashboard() {
 	const [period, setPeriod] = useState<DashboardPeriod>("today");
-	const [data, setData] = useState<PeriodData | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [lowStock, setLowStock] = useState<
-		Awaited<ReturnType<typeof getStockOverview>>
-	>([]);
-	const [stockLoading, setStockLoading] = useState(true);
-	const [stockError, setStockError] = useState<string | null>(null);
+	const dashboard = useAdminDashboard(period);
+	const stock = useStockOverview();
 
-	useEffect(() => {
-		let alive = true;
-		setLoading(true);
-		getDashboard({ data: { period } })
-			.then((d) => {
-				if (alive) {
-					setData(d);
-					setError(null);
-				}
-			})
-			.catch((e: unknown) => {
-				if (alive) {
-					setData(null);
-					setError(e instanceof Error ? e.message : "Gagal memuat dasbor");
-				}
-			})
-			.finally(() => {
-				if (alive) setLoading(false);
-			});
-		return () => {
-			alive = false;
-		};
-	}, [period]);
-
-	useEffect(() => {
-		let active = true;
-		getStockOverview()
-			.then((rows) => {
-				if (active) {
-					setLowStock(rows.filter((row) => row.low));
-					setStockError(null);
-				}
-			})
-			.catch((cause: unknown) => {
-				if (active) {
-					setLowStock([]);
-					setStockError(
-						cause instanceof Error
-							? cause.message
-							: "Gagal memuat peringatan stok.",
-					);
-				}
-			})
-			.finally(() => {
-				if (active) setStockLoading(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, []);
+	const data: PeriodData | null = dashboard.data ?? null;
+	const loading = dashboard.isPending;
+	const error = dashboard.isError
+		? queryErrorMessage(dashboard.error, "Gagal memuat dasbor")
+		: null;
+	const lowStock = (stock.data ?? []).filter((row) => row.low);
+	const stockLoading = stock.isPending;
+	const stockError = stock.isError
+		? queryErrorMessage(stock.error, "Gagal memuat peringatan stok.")
+		: null;
 
 	return (
 		<div className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">

@@ -9,8 +9,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { listCategories } from "@/server/category-functions";
-import { createProduct, updateProduct } from "@/server/product-functions";
+import { useCategories } from "@/features/admin/queries";
+import { mutationErrorMessage } from "@/lib/query-errors";
+import { useCreateProduct, useUpdateProduct } from "../mutations";
 import type { AdminProduct, ImageSource, ProductFormMode } from "../types";
 import { ImageSourceModal } from "./ImageSourceModal";
 
@@ -46,6 +47,10 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 	const libraryRef = useRef<HTMLInputElement>(null);
 	const objectUrlRef = useRef<string | null>(null);
 
+	const categoriesQuery = useCategories();
+	const createProduct = useCreateProduct();
+	const updateProduct = useUpdateProduct();
+
 	const [fields, setFields] = useState<Fields>(() => ({
 		name: initial?.name ?? "",
 		kategoriId: initial ? String(initial.kategoriId) : "",
@@ -53,7 +58,6 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		stok: initial ? String(initial.quantity) : "",
 		gambar: initial?.image ?? "",
 	}));
-	const [kategoris, setKategoris] = useState<Kategori[]>([]);
 	const [picker, setPicker] = useState<ImagePickerState>(() =>
 		initial
 			? { kind: "previewSet", preview: initial.image }
@@ -66,22 +70,12 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		kategori?: string;
 		submit?: string;
 	}>({});
-	const [saving, setSaving] = useState(false);
 
-	useEffect(() => {
-		let alive = true;
-		listCategories()
-			.then((rows) => {
-				if (alive) setKategoris(rows);
-			})
-			.catch(() => {
-				if (alive)
-					setErrors((p) => ({ ...p, kategori: "Gagal memuat kategori." }));
-			});
-		return () => {
-			alive = false;
-		};
-	}, []);
+	const kategoris: Kategori[] = categoriesQuery.data ?? [];
+	const saving = createProduct.isPending || updateProduct.isPending;
+	const kategoriError =
+		errors.kategori ??
+		(categoriesQuery.isError ? "Gagal memuat kategori." : undefined);
 
 	useEffect(
 		() => () => {
@@ -137,7 +131,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		setPicker({ kind: "previewSet", preview: url });
 	}
 
-	async function handleSubmit(event: FormEvent) {
+	function handleSubmit(event: FormEvent) {
 		event.preventDefault();
 		const next: typeof errors = {};
 		if (!fields.name.trim()) next.name = "Nama produk wajib diisi.";
@@ -152,31 +146,34 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		if (!fields.kategoriId) next.kategori = "Kategori wajib dipilih.";
 		setErrors(next);
 		if (Object.keys(next).length > 0) return;
-		setSaving(true);
-		try {
-			const details = {
-				namaProduk: fields.name.trim(),
-				harga: price,
-				kategoriId: Number(fields.kategoriId),
-				gambar:
-					fields.gambar.trim() ||
-					(preview && !preview.startsWith("blob:") ? preview : null),
-			};
-			if (mode === "add") {
-				await createProduct({ data: { ...details, stok } });
-			} else {
-				if (!initial) throw new Error("Produk tidak ditemukan");
-				await updateProduct({ data: { id: initial.id, ...details } });
-			}
-			navigate({ to: "/admin/menu" });
-		} catch (e) {
+
+		const details = {
+			namaProduk: fields.name.trim(),
+			harga: price,
+			kategoriId: Number(fields.kategoriId),
+			gambar:
+				fields.gambar.trim() ||
+				(preview && !preview.startsWith("blob:") ? preview : null),
+		};
+		const onSuccess = () => navigate({ to: "/admin/menu" });
+		const onError = (cause: unknown) =>
 			setErrors((p) => ({
 				...p,
-				submit: e instanceof Error ? e.message : "Gagal menyimpan produk",
+				submit: mutationErrorMessage(cause, "Gagal menyimpan produk"),
 			}));
-		} finally {
-			setSaving(false);
+
+		if (mode === "add") {
+			createProduct.mutate({ ...details, stok }, { onSuccess, onError });
+			return;
 		}
+		if (!initial) {
+			setErrors((p) => ({ ...p, submit: "Produk tidak ditemukan" }));
+			return;
+		}
+		updateProduct.mutate(
+			{ id: initial.id, ...details },
+			{ onSuccess, onError },
+		);
 	}
 
 	return (
@@ -215,11 +212,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 					</button>
 				</div>
 
-				<form
-					onSubmit={(e) => void handleSubmit(e)}
-					className="mt-6"
-					noValidate
-				>
+				<form onSubmit={(e) => handleSubmit(e)} className="mt-6" noValidate>
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<div>
 							<label
@@ -254,9 +247,9 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 								<SelectTrigger
 									id="product-category"
 									aria-labelledby="product-category-label"
-									aria-invalid={Boolean(errors.kategori)}
+									aria-invalid={Boolean(kategoriError)}
 									className={`w-full rounded-lg bg-white px-3 py-2.5 text-sm text-neutral-900 ${
-										errors.kategori
+										kategoriError
 											? "border-red-500 ring-1 ring-red-500"
 											: "border-neutral-200"
 									}`}
@@ -271,8 +264,8 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 									))}
 								</SelectContent>
 							</Select>
-							{errors.kategori && (
-								<p className="mt-1 text-xs text-red-500">{errors.kategori}</p>
+							{kategoriError && (
+								<p className="mt-1 text-xs text-red-500">{kategoriError}</p>
 							)}
 						</div>
 						<div>

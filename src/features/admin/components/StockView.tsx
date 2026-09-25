@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
 	Select,
 	SelectContent,
@@ -7,18 +7,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import {
-	getStockOverview,
-	listStockMoves,
-	restockProduct,
-} from "@/server/stock-functions";
-
-type StockRow = Awaited<ReturnType<typeof getStockOverview>>[number];
-type StockMove = Awaited<ReturnType<typeof listStockMoves>>[number];
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
+import { useRestockProduct } from "../mutations";
+import { useStockMoves, useStockOverview } from "../queries";
 
 export function StockView() {
-	const [products, setProducts] = useState<StockRow[]>([]);
-	const [moves, setMoves] = useState<StockMove[]>([]);
 	const [productId, setProductId] = useState("");
 	const [moveProductId, setMoveProductId] = useState("");
 	const [quantity, setQuantity] = useState("");
@@ -26,9 +19,27 @@ export function StockView() {
 	const [start, setStart] = useState("");
 	const [end, setEnd] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const [busy, setBusy] = useState(false);
-	const [loading, setLoading] = useState(true);
+
+	const overviewQuery = useStockOverview();
+	const movesQuery = useStockMoves({
+		productId: moveProductId ? Number(moveProductId) : undefined,
+		type: type || undefined,
+		start: start || undefined,
+		end: end || undefined,
+	});
+	const restock = useRestockProduct();
+
+	const products = overviewQuery.data ?? [];
+	const moves = movesQuery.data ?? [];
+	const loading = overviewQuery.isPending || movesQuery.isPending;
+	const busy = restock.isPending;
 	const hasMoveFilters = Boolean(moveProductId || type || start || end);
+	const loadError = overviewQuery.isError
+		? queryErrorMessage(overviewQuery.error, "Gagal memuat data stok.")
+		: movesQuery.isError
+			? queryErrorMessage(movesQuery.error, "Gagal memuat data stok.")
+			: null;
+	const notice = error ?? loadError;
 
 	function resetMoveFilters() {
 		setMoveProductId("");
@@ -37,60 +48,23 @@ export function StockView() {
 		setEnd("");
 	}
 
-	const refreshProducts = useCallback(async () => {
-		setProducts(await getStockOverview());
-	}, []);
-
-	const refreshMoves = useCallback(async () => {
-		setMoves(
-			await listStockMoves({
-				data: {
-					productId: moveProductId ? Number(moveProductId) : undefined,
-					type: type || undefined,
-					start: start || undefined,
-					end: end || undefined,
-				},
-			}),
-		);
-	}, [moveProductId, type, start, end]);
-
-	useEffect(() => {
-		void Promise.all([refreshProducts(), refreshMoves()])
-			.catch((cause: unknown) =>
-				setError(
-					cause instanceof Error ? cause.message : "Gagal memuat data stok.",
-				),
-			)
-			.finally(() => setLoading(false));
-	}, [refreshProducts, refreshMoves]);
-
-	async function submitRestock(event: React.FormEvent<HTMLFormElement>) {
+	function submitRestock(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (busy || !productId) return;
-		setBusy(true);
 		setError(null);
-		try {
-			await restockProduct({
-				data: { productId: Number(productId), quantity: Number(quantity) },
-			});
-			setQuantity("");
-			await Promise.all([refreshProducts(), refreshMoves()]);
-		} catch (cause) {
-			setError(cause instanceof Error ? cause.message : "Gagal menambah stok.");
-		} finally {
-			setBusy(false);
-		}
+		restock.mutate(
+			{ productId: Number(productId), quantity: Number(quantity) },
+			{
+				onSuccess: () => setQuantity(""),
+				onError: (cause) =>
+					setError(mutationErrorMessage(cause, "Gagal menambah stok.")),
+			},
+		);
 	}
 
-	async function applyFilters() {
+	function applyFilters() {
 		setError(null);
-		try {
-			await refreshMoves();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal memuat riwayat stok.",
-			);
-		}
+		void movesQuery.refetch();
 	}
 
 	return (
@@ -99,16 +73,16 @@ export function StockView() {
 			{loading ? (
 				<p className="mt-4 text-sm text-neutral-500">Memuat data stok…</p>
 			) : null}
-			{error ? (
+			{notice ? (
 				<p
 					role="alert"
 					className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
 				>
-					{error}
+					{notice}
 				</p>
 			) : null}
 			<form
-				onSubmit={(event) => void submitRestock(event)}
+				onSubmit={(event) => submitRestock(event)}
 				className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm sm:grid-cols-[1fr_180px_auto]"
 			>
 				<div className="text-sm font-medium">
@@ -256,7 +230,7 @@ export function StockView() {
 						/>
 						<button
 							type="button"
-							onClick={() => void applyFilters()}
+							onClick={applyFilters}
 							className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold"
 						>
 							Terapkan

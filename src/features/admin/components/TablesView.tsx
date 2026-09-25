@@ -1,85 +1,76 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import {
-	createMeja,
-	deleteMeja,
-	listMeja,
-	renameMeja,
-} from "@/server/meja-functions";
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
+import { useCreateMeja, useDeleteMeja, useRenameMeja } from "../mutations";
+import { useTables } from "../queries";
 
 type Meja = { id: number; nama: string; lantai: string };
 
 export function TablesView() {
-	const [tables, setTables] = useState<Meja[]>([]);
+	const tablesQuery = useTables();
+	const createMeja = useCreateMeja();
+	const renameMeja = useRenameMeja();
+	const deleteMeja = useDeleteMeja();
+
 	const [name, setName] = useState("");
 	const [lantai, setLantai] = useState("Lantai 1");
 	const [editing, setEditing] = useState<Meja | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [busy, setBusy] = useState(false);
-	const [loading, setLoading] = useState(true);
 
-	const refresh = useCallback(async () => {
-		setTables(await listMeja());
-	}, []);
+	const tables = tablesQuery.data ?? [];
+	const loading = tablesQuery.isPending;
+	const busy = createMeja.isPending || renameMeja.isPending;
+	const loadError = tablesQuery.isError
+		? queryErrorMessage(tablesQuery.error, "Gagal memuat meja.")
+		: null;
+	const notice = error ?? loadError;
 
-	useEffect(() => {
-		void refresh()
-			.catch((cause: unknown) =>
-				setError(cause instanceof Error ? cause.message : "Gagal memuat meja."),
-			)
-			.finally(() => setLoading(false));
-	}, [refresh]);
-
-	async function save(event: React.FormEvent<HTMLFormElement>) {
+	function save(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (busy) return;
-		setBusy(true);
 		setError(null);
-		try {
-			if (editing) {
-				await renameMeja({ data: { id: editing.id, nama: name, lantai } });
-			} else {
-				await createMeja({ data: { nama: name, lantai } });
-			}
+		const onSuccess = () => {
 			setName("");
 			setLantai("Lantai 1");
 			setEditing(null);
-			await refresh();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal menyimpan meja.",
+		};
+		const onError = (cause: unknown) =>
+			setError(mutationErrorMessage(cause, "Gagal menyimpan meja."));
+		if (editing) {
+			renameMeja.mutate(
+				{ id: editing.id, nama: name, lantai },
+				{ onSuccess, onError },
 			);
-		} finally {
-			setBusy(false);
+		} else {
+			createMeja.mutate({ nama: name, lantai }, { onSuccess, onError });
 		}
 	}
 
-	async function remove(meja: Meja) {
+	function remove(meja: Meja) {
 		if (!window.confirm(`Hapus ${meja.nama}?`)) return;
 		setError(null);
-		try {
-			await deleteMeja({ data: { id: meja.id } });
-			await refresh();
-		} catch (cause) {
-			setError(
-				cause instanceof Error ? cause.message : "Gagal menghapus meja.",
-			);
-		}
+		deleteMeja.mutate(
+			{ id: meja.id },
+			{
+				onError: (cause) =>
+					setError(mutationErrorMessage(cause, "Gagal menghapus meja.")),
+			},
+		);
 	}
 
 	return (
 		<main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Meja</h1>
-			{error ? (
+			{notice ? (
 				<p
 					role="alert"
 					className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
 				>
-					{error}
+					{notice}
 				</p>
 			) : null}
 			<form
-				onSubmit={(event) => void save(event)}
+				onSubmit={(event) => save(event)}
 				className="mt-5 flex flex-wrap gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm"
 			>
 				<label className="min-w-0 flex-1">
@@ -151,7 +142,7 @@ export function TablesView() {
 							</button>
 							<button
 								type="button"
-								onClick={() => void remove(meja)}
+								onClick={() => remove(meja)}
 								className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700"
 							>
 								Hapus
