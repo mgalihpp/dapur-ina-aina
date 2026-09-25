@@ -1,8 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
+import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicMeja } from "@/server/public-functions";
-import { listPublicMeja } from "@/server/public-functions";
 import {
 	DEFAULT_GUEST_COUNT,
 	rehydrateGuestStore,
@@ -11,6 +12,7 @@ import {
 	selectGuestTable,
 	useGuestStore,
 } from "../lib/guest-store";
+import { publicMejaQueryOptions } from "../queries";
 import { PublicOrderSummary, PublicPageLayout } from "./PublicLayout";
 
 function shortLabel(nama: string): string {
@@ -78,10 +80,13 @@ function MejaPlan({
 
 export function PublicMejaView() {
 	const navigate = useNavigate();
-	const [mejaRows, setMejaRows] = useState<PublicMeja[]>([]);
 	const [lantaiTab, setLantaiTab] = useState("Lantai 1");
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const mejaQuery = useQuery(publicMejaQueryOptions());
+	const mejaRows = mejaQuery.data ?? [];
+	const loading = mejaQuery.isPending;
+	const error = mejaQuery.isError
+		? queryErrorMessage(mejaQuery.error, "Gagal memuat meja.")
+		: null;
 	const hydrated = useGuestStore(selectGuestHydrated);
 	const table = useGuestStore(selectGuestTable);
 	const cart = useGuestStore(selectGuestCart);
@@ -89,27 +94,6 @@ export function PublicMejaView() {
 
 	useEffect(() => {
 		void rehydrateGuestStore();
-	}, []);
-
-	useEffect(() => {
-		let active = true;
-		listPublicMeja()
-			.then((rows) => {
-				if (active) setMejaRows(rows);
-			})
-			.catch((cause: unknown) => {
-				if (active) {
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat meja.",
-					);
-				}
-			})
-			.finally(() => {
-				if (active) setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
 	}, []);
 
 	useEffect(() => {

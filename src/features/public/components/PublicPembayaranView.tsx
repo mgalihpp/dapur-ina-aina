@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
 import { sumMoneyLines } from "@/features/shared/lib/money";
-import { createPublicOrder } from "@/server/public-functions";
+import { queryErrorMessage } from "@/lib/query-errors";
 import type { GuestPaymentMethod } from "@/server/validators";
 import {
 	rehydrateGuestStore,
@@ -12,6 +12,7 @@ import {
 	selectGuestTable,
 	useGuestStore,
 } from "../lib/guest-store";
+import { useCreatePublicOrderMutation } from "../mutations";
 import { PublicOrderSummary, PublicPageLayout } from "./PublicLayout";
 
 export function PublicPembayaranView() {
@@ -21,8 +22,14 @@ export function PublicPembayaranView() {
 	const hydrated = useGuestStore(selectGuestHydrated);
 	const addOrder = useGuestStore((state) => state.addOrder);
 	const clearCart = useGuestStore((state) => state.clearCart);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const createOrderMutation = useCreatePublicOrderMutation();
+	const busy = createOrderMutation.isPending;
+	const error = createOrderMutation.isError
+		? queryErrorMessage(
+				createOrderMutation.error,
+				"Pesanan tidak dapat dibuat. Coba lagi.",
+			)
+		: null;
 	const [paymentMethod, setPaymentMethod] =
 		useState<GuestPaymentMethod>("tunai");
 
@@ -30,40 +37,33 @@ export function PublicPembayaranView() {
 		void rehydrateGuestStore();
 	}, []);
 
-	async function confirmOrder() {
+	function confirmOrder() {
 		if (busy || !hydrated || !meja || cart.length === 0) return;
-		setBusy(true);
-		setError(null);
-		try {
-			const order = await createPublicOrder({
-				data: {
-					items: cart.map((item) => ({
-						productId: item.productId,
-						quantity: item.quantity,
-					})),
-					meja: meja.nama,
-					tamu: meja.tamu,
-					paymentMethod,
-				},
-			});
-			addOrder({
-				id: order.id,
-				tanggal: new Date().toISOString().slice(0, 10),
+		createOrderMutation.mutate(
+			{
+				items: cart.map((item) => ({
+					productId: item.productId,
+					quantity: item.quantity,
+				})),
 				meja: meja.nama,
-			});
-			clearCart();
-			void navigate({
-				to: "/pesanan/$orderId",
-				params: { orderId: String(order.id) },
-			});
-		} catch (cause: unknown) {
-			setError(
-				cause instanceof Error
-					? cause.message
-					: "Pesanan tidak dapat dibuat. Coba lagi.",
-			);
-			setBusy(false);
-		}
+				tamu: meja.tamu,
+				paymentMethod,
+			},
+			{
+				onSuccess: (order) => {
+					addOrder({
+						id: order.id,
+						tanggal: new Date().toISOString().slice(0, 10),
+						meja: meja.nama,
+					});
+					clearCart();
+					void navigate({
+						to: "/pesanan/$orderId",
+						params: { orderId: String(order.id) },
+					});
+				},
+			},
+		);
 	}
 
 	return (
@@ -97,7 +97,7 @@ export function PublicPembayaranView() {
 						<button
 							type="button"
 							disabled={busy || !hydrated || !meja || cart.length === 0}
-							onClick={() => void confirmOrder()}
+							onClick={confirmOrder}
 							className="w-full rounded-xl bg-[#F97316] py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{busy

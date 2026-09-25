@@ -9,12 +9,12 @@ import {
 	Tags,
 	Users,
 } from "lucide-react";
+import { useSignOutMutation } from "@/features/auth/mutations";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import {
 	AppSidebar,
 	type SidebarItem,
 } from "@/features/shared/components/AppSidebar";
-import { authClient } from "@/lib/auth-client";
 
 type AdminSidebarProps = {
 	active?:
@@ -30,6 +30,7 @@ type AdminSidebarProps = {
 
 export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 	const navigate = useNavigate();
+	const signOutMutation = useSignOutMutation();
 	const items: SidebarItem[] = [
 		{
 			icon: LayoutGrid,
@@ -81,10 +82,11 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 		},
 	];
 
-	async function logout() {
+	function logout() {
 		useOrdersStore.getState().reset();
-		await authClient.signOut();
-		await navigate({ to: "/login" });
+		signOutMutation.mutate(undefined, {
+			onSuccess: () => void navigate({ to: "/login" }),
+		});
 	}
 
 	return (

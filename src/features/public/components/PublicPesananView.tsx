@@ -6,17 +6,17 @@ import {
 	ShoppingBag,
 	Utensils,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
 import type { PublicOrderDetail } from "@/server/public-functions";
-import { getPublicOrderDetail } from "@/server/public-functions";
 import {
 	rehydrateGuestStore,
 	selectGuestHydrated,
 	selectGuestOrders,
 	useGuestStore,
 } from "../lib/guest-store";
+import { usePublicOrderQueries } from "../queries";
 
 type Row = {
 	id: number;
@@ -66,8 +66,6 @@ function shortDate(value: string): string {
 }
 
 export function PublicPesananView() {
-	const [rows, setRows] = useState<Row[]>([]);
-	const [loading, setLoading] = useState(true);
 	const hydrated = useGuestStore(selectGuestHydrated);
 	const saved = useGuestStore(selectGuestOrders);
 
@@ -75,38 +73,15 @@ export function PublicPesananView() {
 		void rehydrateGuestStore();
 	}, []);
 
-	useEffect(() => {
-		if (!hydrated) return;
-		if (saved.length === 0) {
-			setRows([]);
-			setLoading(false);
-			return;
-		}
-		let active = true;
-		setLoading(true);
-		Promise.all(
-			saved.map(async (order) => {
-				try {
-					const detail = await getPublicOrderDetail({
-						data: { id: order.id },
-					});
-					return { id: order.id, meja: order.meja, detail };
-				} catch {
-					return { id: order.id, meja: order.meja, detail: null };
-				}
-			}),
-		).then((result) => {
-			if (active) {
-				setRows(result);
-				setLoading(false);
-			}
-		});
-		return () => {
-			active = false;
-		};
-	}, [hydrated, saved]);
+	const orderResults = usePublicOrderQueries(saved.map((order) => order.id));
+	const rows: Row[] = saved.map((order, index) => ({
+		id: order.id,
+		meja: order.meja,
+		detail: orderResults[index]?.data ?? null,
+	}));
+	const loading = !hydrated || orderResults.some((result) => result.isPending);
 
-	if (!hydrated || loading) {
+	if (loading) {
 		return (
 			<main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 sm:px-8">
 				<div className="rounded-2xl border border-neutral-100 bg-white p-8 shadow-sm">

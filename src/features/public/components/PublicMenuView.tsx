@@ -1,9 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicCatalogProduct } from "@/server/public-functions";
-import { listPublicCatalog } from "@/server/public-functions";
 import {
 	rehydrateGuestStore,
 	selectGuestCart,
@@ -11,15 +12,19 @@ import {
 	selectGuestTable,
 	useGuestStore,
 } from "../lib/guest-store";
+import { publicCatalogQueryOptions } from "../queries";
 import { PublicOrderSummary, PublicPageLayout } from "./PublicLayout";
 
 export function PublicMenuView() {
 	const navigate = useNavigate();
-	const [products, setProducts] = useState<PublicCatalogProduct[]>([]);
 	const [category, setCategory] = useState("all");
 	const [search, setSearch] = useState("");
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const catalogQuery = useQuery(publicCatalogQueryOptions());
+	const products = catalogQuery.data ?? [];
+	const loading = catalogQuery.isPending;
+	const error = catalogQuery.isError
+		? queryErrorMessage(catalogQuery.error, "Gagal memuat menu.")
+		: null;
 	const cart = useGuestStore(selectGuestCart);
 	const meja = useGuestStore(selectGuestTable);
 	const hydrated = useGuestStore(selectGuestHydrated);
@@ -30,27 +35,6 @@ export function PublicMenuView() {
 
 	useEffect(() => {
 		void rehydrateGuestStore();
-	}, []);
-
-	useEffect(() => {
-		let active = true;
-		listPublicCatalog()
-			.then((rows) => {
-				if (active) setProducts(rows);
-			})
-			.catch((cause: unknown) => {
-				if (active) {
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat menu.",
-					);
-				}
-			})
-			.finally(() => {
-				if (active) setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
 	}, []);
 
 	useEffect(() => {

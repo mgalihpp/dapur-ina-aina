@@ -1,10 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ReceiptText } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import QRCode from "react-qr-code";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicOrderDetail } from "@/server/public-functions";
-import { getPublicOrderDetail } from "@/server/public-functions";
+import { publicOrderQueryOptions } from "../queries";
 
 function orderStatusLabel(status: PublicOrderDetail["status"]): string {
 	if (status === "diproses") return "Diproses";
@@ -63,31 +65,13 @@ function toInvoiceOrder(order: PublicOrderDetail) {
 }
 
 export function PublicOrderView({ orderId }: { orderId: string }) {
-	const [order, setOrder] = useState<PublicOrderDetail | null>(null);
 	const [invoice, setInvoice] = useState(false);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		let active = true;
-		getPublicOrderDetail({ data: { id: orderId } })
-			.then((row) => {
-				if (active) setOrder(row);
-			})
-			.catch((cause: unknown) => {
-				if (active) {
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat pesanan.",
-					);
-				}
-			})
-			.finally(() => {
-				if (active) setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, [orderId]);
+	const orderQuery = useQuery(publicOrderQueryOptions(orderId));
+	const order = orderQuery.data ?? null;
+	const loading = orderQuery.isPending;
+	const error = orderQuery.isError
+		? queryErrorMessage(orderQuery.error, "Gagal memuat pesanan.")
+		: null;
 
 	if (loading) {
 		return (

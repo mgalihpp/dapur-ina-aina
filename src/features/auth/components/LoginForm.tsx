@@ -2,19 +2,19 @@ import { useNavigate } from "@tanstack/react-router";
 import { AtSign, Lock } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
 import { userRoleOf } from "@/lib/roles";
-import { getSession } from "@/server/auth-functions";
 import { isValidEmail, loginMethodFor } from "../lib/validation";
+import { useSignInMutation } from "../mutations";
 
 export function LoginForm() {
 	const navigate = useNavigate();
+	const signInMutation = useSignInMutation();
 	const [identifier, setIdentifier] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const [pending, setPending] = useState(false);
+	const pending = signInMutation.isPending;
 
-	async function onSubmit(event: FormEvent<HTMLFormElement>) {
+	function onSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError(null);
 		const value = identifier.trim();
@@ -30,26 +30,21 @@ export function LoginForm() {
 			setError("Kata sandi minimal 8 karakter.");
 			return;
 		}
-		setPending(true);
-		try {
-			const res =
-				loginMethodFor(value) === "email"
-					? await authClient.signIn.email({ email: value, password })
-					: await authClient.signIn.username({ username: value, password });
-			if (res.error) {
-				setError("Username/email atau kata sandi salah. Coba lagi.");
-				return;
-			}
-			const session = await getSession();
-			const role = userRoleOf(session?.user);
-			await navigate({
-				to: role === "admin" ? "/admin" : role === "kasir" ? "/kasir" : "/",
-			});
-		} catch {
-			setError("Username/email atau kata sandi salah. Coba lagi.");
-		} finally {
-			setPending(false);
-		}
+
+		signInMutation.mutate(
+			{ identifier: value, password },
+			{
+				onSuccess: (session) => {
+					const role = userRoleOf(session.user);
+					void navigate({
+						to: role === "admin" ? "/admin" : role === "kasir" ? "/kasir" : "/",
+					});
+				},
+				onError: () => {
+					setError("Username/email atau kata sandi salah. Coba lagi.");
+				},
+			},
+		);
 	}
 
 	return (

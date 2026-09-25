@@ -1,16 +1,17 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Boxes, ClipboardList, LayoutGrid, ShoppingCart } from "lucide-react";
+import { useSignOutMutation } from "@/features/auth/mutations";
 import { usePosStore } from "@/features/kasir/lib/pos-store";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import {
 	AppSidebar,
 	type SidebarItem,
 } from "@/features/shared/components/AppSidebar";
-import { authClient } from "@/lib/auth-client";
 
 export function KasirSidebar() {
 	const navigate = useNavigate();
 	const pathname = useLocation({ select: (state) => state.pathname });
+	const signOutMutation = useSignOutMutation();
 	const items: SidebarItem[] = [
 		{
 			icon: LayoutGrid,
@@ -38,11 +39,12 @@ export function KasirSidebar() {
 		},
 	];
 
-	async function logout() {
+	function logout() {
 		usePosStore.getState().reset();
 		useOrdersStore.getState().reset();
-		await authClient.signOut();
-		await navigate({ to: "/login" });
+		signOutMutation.mutate(undefined, {
+			onSuccess: () => void navigate({ to: "/login" }),
+		});
 	}
 
 	return (
