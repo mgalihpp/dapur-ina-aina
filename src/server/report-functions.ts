@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
 import { ensureAdmin } from "./guards";
@@ -55,21 +56,13 @@ export const listLaporan = createServerFn({ method: "GET" }).handler(
 	},
 );
 
-type GenerateLaporanResult =
-	| {
-			id: null;
-			periode: string;
-			totalPenjualan: string;
-			jumlahPesanan: 0;
-			empty: true;
-	  }
-	| {
-			id: number;
-			periode: string;
-			totalPenjualan: string;
-			jumlahPesanan: number;
-			empty: false;
-	  };
+type GenerateLaporanResult = {
+	id: number;
+	periode: string;
+	totalPenjualan: string;
+	jumlahPesanan: number;
+	empty: boolean;
+};
 
 export const generateLaporan = createServerFn({ method: "POST" })
 	.validator(parsePeriodeInput)
@@ -86,31 +79,23 @@ export const generateLaporan = createServerFn({ method: "POST" })
 			},
 			select: { total: true },
 		});
-		const total = totals.reduce((sum, o) => sum + Number(o.total), 0);
-		const rounded = Math.round(total * 100) / 100;
+		const total = totals.reduce(
+			(sum, order) => sum.plus(order.total),
+			new Prisma.Decimal(0),
+		);
 
-		// Periode kosong tidak disimpan agar daftar tidak penuh baris Rp0.
-		if (totals.length === 0) {
-			return {
-				id: null,
-				periode: data.periode,
-				totalPenjualan: "0.00",
-				jumlahPesanan: 0,
-				empty: true,
-			};
-		}
-
+		// Periode kosong tetap disimpan Rp0 agar teraudit di daftar laporan.
 		const saved = await prisma.laporanPenjualan.upsert({
 			where: { periode: data.periode },
-			create: { periode: data.periode, totalPenjualan: rounded },
-			update: { totalPenjualan: rounded },
+			create: { periode: data.periode, totalPenjualan: total },
+			update: { totalPenjualan: total },
 		});
 		return {
 			id: saved.id,
 			periode: saved.periode,
-			totalPenjualan: saved.totalPenjualan.toString(),
+			totalPenjualan: saved.totalPenjualan.toFixed(2),
 			jumlahPesanan: totals.length,
-			empty: false,
+			empty: totals.length === 0,
 		};
 	});
 
@@ -149,7 +134,9 @@ export const getLaporanRentang = createServerFn({ method: "GET" })
 			start: data.start,
 			end: data.end,
 			jumlahPesanan: pesanan.length,
-			total: pesanan.reduce((s, o) => s + Number(o.total), 0).toFixed(2),
+			total: pesanan
+				.reduce((sum, order) => sum.plus(order.total), new Prisma.Decimal(0))
+				.toFixed(2),
 			pesanan,
 		};
 	});

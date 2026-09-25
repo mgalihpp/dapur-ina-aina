@@ -1,5 +1,4 @@
 export { AdminDashboard } from "./components/AdminDashboard";
-export { AdminInvoiceSuccessView } from "./components/AdminInvoiceSuccessView";
 export { AdminLayout } from "./components/AdminLayout";
 export { AdminShell } from "./components/AdminShell";
 export { AdminSidebar } from "./components/AdminSidebar";

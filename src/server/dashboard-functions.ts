@@ -1,7 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import type { DashboardPeriod, PeriodData } from "@/features/admin/types";
 import { prisma } from "@/lib/prisma";
-import { ensureAdmin } from "./guards";
+import { ensureAdmin, ensureStaff } from "./guards";
 import { parseDashboardPeriod } from "./validators";
 
 function startOf(period: DashboardPeriod, now: Date): Date {
@@ -59,41 +60,48 @@ export const getDashboard = createServerFn({ method: "GET" })
 					select: {
 						namaProduk: true,
 						harga: true,
+						gambar: true,
 						kategori: { select: { namaKategori: true } },
 					},
 				},
 			},
 		});
 
-		const incomeByKat = new Map<string, number>();
+		const incomeByKat = new Map<string, Prisma.Decimal>();
 		for (const x of details) {
 			const kat = x.produk.kategori.namaKategori;
 			incomeByKat.set(
 				kat,
-				(incomeByKat.get(kat) ?? 0) + Number(x.subtotal.toString()),
+				(incomeByKat.get(kat) ?? new Prisma.Decimal(0)).plus(x.subtotal),
 			);
 		}
 		const colors = ["#F97316", "#111827", "#E5E7EB"] as const;
 		const income = [...incomeByKat.entries()].map(([label, value], i) => ({
 			label,
-			value: Math.round(value * 100) / 100,
+			value: Number(value.toFixed(2)),
 			color: colors[i % colors.length],
 		}));
 
-		const total = orders.reduce((s, o) => s + Number(o.total.toString()), 0);
-		const dailyMap = new Map<string, number>();
+		const total = orders.reduce(
+			(sum, order) => sum.plus(order.total),
+			new Prisma.Decimal(0),
+		);
+		const dailyMap = new Map<string, Prisma.Decimal>();
 		for (const o of orders) {
 			const key = bucketLabel(data.period, new Date(o.tanggal));
-			dailyMap.set(key, (dailyMap.get(key) ?? 0) + Number(o.total.toString()));
+			dailyMap.set(
+				key,
+				(dailyMap.get(key) ?? new Prisma.Decimal(0)).plus(o.total),
+			);
 		}
 		const daily = [...dailyMap.entries()].map(([label, value]) => ({
 			label,
-			value: Math.round(value * 100) / 100,
+			value: Number(value.toFixed(2)),
 		}));
 
 		const dishMap = new Map<
 			string,
-			{ name: string; price: number; orders: number }
+			{ name: string; price: number; orders: number; image: string | null }
 		>();
 		for (const x of details) {
 			const name = x.produk.namaProduk;
@@ -101,6 +109,7 @@ export const getDashboard = createServerFn({ method: "GET" })
 				name,
 				price: Number(x.produk.harga.toString()),
 				orders: 0,
+				image: x.produk.gambar,
 			};
 			cur.orders += x.jumlah;
 			dishMap.set(name, cur);
@@ -113,8 +122,8 @@ export const getDashboard = createServerFn({ method: "GET" })
 		const data_out: PeriodData = {
 			income,
 			balance: {
-				total: Math.round(total * 100) / 100,
-				income: Math.round(total * 100) / 100,
+				total: Number(total.toFixed(2)),
+				income: Number(total.toFixed(2)),
 				expense: 0,
 				incomeDelta: `${orders.length} pesanan lunas`,
 				expenseDelta: "-",
@@ -124,3 +133,25 @@ export const getDashboard = createServerFn({ method: "GET" })
 		};
 		return data_out;
 	});
+
+export const getCashierDashboard = createServerFn({ method: "GET" }).handler(
+	async () => {
+		await ensureStaff();
+		const [pendingOrders, lowStock] = await Promise.all([
+			prisma.pesanan.count({ where: { status: "diproses" } }),
+			prisma.produk.findMany({
+				where: { stok: { lte: 5 } },
+				select: { id: true, namaProduk: true, stok: true },
+				orderBy: [{ stok: "asc" }, { namaProduk: "asc" }],
+			}),
+		]);
+		return {
+			pendingOrders,
+			lowStock: lowStock.map((product) => ({
+				id: product.id,
+				name: product.namaProduk,
+				stock: product.stok,
+			})),
+		};
+	},
+);

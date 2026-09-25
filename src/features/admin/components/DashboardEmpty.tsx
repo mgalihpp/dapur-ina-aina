@@ -52,10 +52,6 @@ export function DashboardEmpty() {
 			<p className="mt-4 text-base font-bold text-neutral-900">
 				Belum ada penjualan pada periode ini
 			</p>
-			<p className="mt-1 max-w-[360px] text-sm text-neutral-400">
-				Penjualan yang sudah selesai dan lunas akan dirangkum di sini. Coba
-				pilih periode lain di atas.
-			</p>
 		</div>
 	);
 }

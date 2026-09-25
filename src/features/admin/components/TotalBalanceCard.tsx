@@ -9,35 +9,45 @@ type TotalBalanceCardProps = {
 
 export function TotalBalanceCard({ data }: TotalBalanceCardProps) {
 	return (
-		<section className={cardClass}>
-			<h2 className="text-base font-bold">Total Saldo</h2>
-			<p className="mt-2 text-3xl font-bold text-emerald-500">
-				{fmtInt(data.total)}
-			</p>
-			<div className="mt-5 space-y-4">
+		<section className={`${cardClass} flex h-full flex-col`}>
+			<h2 className="text-lg font-bold text-neutral-900">Total Saldo</h2>
+			<div className="flex flex-1 items-center justify-center px-4 py-6">
+				<p className="text-center text-[32px] leading-tight font-bold text-emerald-600 tabular-nums break-words">
+					{fmtInt(data.total)}
+				</p>
+			</div>
+			<div className="mt-auto space-y-5 pt-6">
 				<div className="flex items-center gap-3">
-					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-900">
-						<BarChart3 className="h-5 w-5 text-white" />
+					<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-neutral-900">
+						<BarChart3 className="size-5 text-white" />
 					</div>
 					<div>
-						<p className="text-xs text-neutral-400">Total Pemasukan</p>
-						<p className="text-sm font-bold">{fmtInt(data.income)}</p>
+						<p className="text-sm text-neutral-900">Total Pemasukan</p>
+						<p className="text-sm font-bold text-neutral-900 tabular-nums">
+							{fmtInt(data.income)}
+						</p>
 					</div>
-					<span className="ml-auto text-xs font-medium text-emerald-500">
-						{data.incomeDelta}
-					</span>
+					{data.incomeDelta !== "-" ? (
+						<span className="ml-auto shrink-0 text-xs text-neutral-400">
+							({data.incomeDelta})
+						</span>
+					) : null}
 				</div>
 				<div className="flex items-center gap-3">
-					<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#EF7D1A]">
-						<Wallet className="h-5 w-5 text-white" />
+					<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#EF7D1A]">
+						<Wallet className="size-5 text-white" />
 					</div>
 					<div>
-						<p className="text-xs text-neutral-400">Total Pengeluaran</p>
-						<p className="text-sm font-bold">{fmtInt(data.expense)}</p>
+						<p className="text-sm text-neutral-900">Total Pengeluaran</p>
+						<p className="text-sm font-bold text-neutral-900 tabular-nums">
+							{fmtInt(data.expense)}
+						</p>
 					</div>
-					<span className="ml-auto text-xs font-medium text-emerald-500">
-						{data.expenseDelta}
-					</span>
+					{data.expenseDelta !== "-" ? (
+						<span className="ml-auto shrink-0 text-xs text-neutral-400">
+							({data.expenseDelta})
+						</span>
+					) : null}
 				</div>
 			</div>
 		</section>

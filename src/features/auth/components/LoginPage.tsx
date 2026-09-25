@@ -1,6 +1,5 @@
 import { LoginForm } from "./LoginForm";
 import LoginIllustration from "./LoginIllustration";
-import { SocialButtons } from "./SocialButtons";
 
 export function LoginPage() {
 	return (
@@ -18,24 +17,6 @@ export function LoginPage() {
 				<section className="flex items-start justify-center px-6 pb-12 pt-2 sm:items-center sm:py-12">
 					<div className="w-full max-w-sm">
 						<LoginForm />
-
-						<div className="my-6 flex items-center gap-3 text-sm text-neutral-400">
-							<span className="h-px flex-1 bg-neutral-200" />
-							Atau
-							<span className="h-px flex-1 bg-neutral-200" />
-						</div>
-
-						<SocialButtons />
-
-						<p className="mt-6 text-center text-sm text-neutral-500">
-							Belum punya akun?{" "}
-							<a
-								href="/login"
-								className="font-semibold text-[#EF7D1A] hover:text-[#E06F00]"
-							>
-								Daftar
-							</a>
-						</p>
 					</div>
 				</section>
 			</div>

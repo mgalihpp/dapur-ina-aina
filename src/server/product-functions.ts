@@ -1,6 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
-import { ensureAdmin } from "./guards";
+import { ensureAdmin, ensureStaff } from "./guards";
 import {
 	parseIdInput,
 	parseProductInput,
@@ -52,6 +53,25 @@ export const listProducts = createServerFn({ method: "GET" }).handler(
 	},
 );
 
+export const listCashierCatalog = createServerFn({ method: "GET" }).handler(
+	async () => {
+		await ensureStaff();
+		const products = await prisma.produk.findMany({
+			include: { kategori: { select: { namaKategori: true } } },
+			orderBy: [{ kategori: { namaKategori: "asc" } }, { namaProduk: "asc" }],
+		});
+		return products.map((product) => ({
+			id: product.id,
+			name: product.namaProduk,
+			price: product.harga.toFixed(2),
+			stock: product.stok,
+			image: product.gambar ?? "/logo.png",
+			categoryId: product.kategoriId,
+			category: product.kategori.namaKategori,
+		}));
+	},
+);
+
 export const getProduct = createServerFn({ method: "GET" })
 	.validator(parseIdInput)
 	.handler(async ({ data }) => {
@@ -64,13 +84,6 @@ export const getProduct = createServerFn({ method: "GET" })
 		return toRow(p);
 	});
 
-export const listKategori = createServerFn({ method: "GET" }).handler(
-	async () => {
-		await ensureAdmin();
-		return prisma.kategori.findMany({ orderBy: { namaKategori: "asc" } });
-	},
-);
-
 export const createProduct = createServerFn({ method: "POST" })
 	.validator(parseProductInput)
 	.handler(async ({ data }) => {
@@ -79,27 +92,29 @@ export const createProduct = createServerFn({ method: "POST" })
 			where: { id: data.kategoriId },
 		});
 		if (!kategori) throw new Error("Kategori tidak ditemukan.");
-		const created = await prisma.produk.create({
-			data: {
-				namaProduk: data.namaProduk,
-				harga: Math.round(data.harga * 100) / 100,
-				stok: data.stok,
-				kategoriId: data.kategoriId,
-				gambar: data.gambar,
-			},
-			include: { kategori: { select: { namaKategori: true } } },
-		});
-		if (data.stok > 0) {
-			await prisma.stok.create({
+		return prisma.$transaction(async (tx) => {
+			const created = await tx.produk.create({
 				data: {
-					produkId: created.id,
-					jumlah: data.stok,
-					jenis: "masuk",
-					tanggal: new Date(),
+					namaProduk: data.namaProduk,
+					harga: new Prisma.Decimal(data.harga),
+					stok: data.stok,
+					kategoriId: data.kategoriId,
+					gambar: data.gambar,
 				},
+				include: { kategori: { select: { namaKategori: true } } },
 			});
-		}
-		return toRow(created);
+			if (data.stok > 0) {
+				await tx.stok.create({
+					data: {
+						produkId: created.id,
+						jumlah: data.stok,
+						jenis: "masuk",
+						tanggal: new Date(),
+					},
+				});
+			}
+			return toRow(created);
+		});
 	});
 
 export const updateProduct = createServerFn({ method: "POST" })
@@ -114,30 +129,17 @@ export const updateProduct = createServerFn({ method: "POST" })
 			where: { id: data.kategoriId },
 		});
 		if (!kategori) throw new Error("Kategori tidak ditemukan.");
-		// Selisih stok dicatat sebagai pergerakan agar riwayat konsisten (FR-STK-1).
-		const delta = data.stok - existing.stok;
 		const updated = await prisma.$transaction(async (tx) => {
 			const row = await tx.produk.update({
 				where: { id: data.id },
 				data: {
 					namaProduk: data.namaProduk,
-					harga: Math.round(data.harga * 100) / 100,
-					stok: data.stok,
+					harga: new Prisma.Decimal(data.harga),
 					kategoriId: data.kategoriId,
 					gambar: data.gambar,
 				},
 				include: { kategori: { select: { namaKategori: true } } },
 			});
-			if (delta !== 0) {
-				await tx.stok.create({
-					data: {
-						produkId: data.id,
-						jumlah: Math.abs(delta),
-						jenis: delta > 0 ? "masuk" : "keluar",
-						tanggal: new Date(),
-					},
-				});
-			}
 			return row;
 		});
 		return toRow(updated);
@@ -149,11 +151,15 @@ export const deleteProduct = createServerFn({ method: "POST" })
 		await ensureAdmin();
 		try {
 			await prisma.produk.delete({ where: { id: data.id } });
-		} catch {
-			// FK Restrict: produk dipakai detail pesanan / riwayat stok.
-			throw new Error(
-				"Produk tidak dapat dihapus karena sudah dipakai transaksi.",
-			);
+		} catch (error) {
+			if (
+				error instanceof Prisma.PrismaClientKnownRequestError &&
+				error.code === "P2003"
+			)
+				throw new Error(
+					"Produk tidak dapat dihapus karena sudah dipakai transaksi atau riwayat stok.",
+				);
+			throw error;
 		}
 		return { id: data.id };
 	});

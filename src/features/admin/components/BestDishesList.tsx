@@ -18,9 +18,18 @@ export function BestDishesList({ data }: BestDishesListProps) {
 			<ul className="mt-2 divide-y divide-neutral-100">
 				{data.map((dish) => (
 					<li key={dish.id} className="flex items-center gap-3 py-3">
-						<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
-							<UtensilsCrossed className="h-5 w-5 text-[#EF7D1A]" />
-						</div>
+						{dish.image ? (
+							<img
+								src={dish.image}
+								alt={dish.name}
+								className="h-11 w-11 shrink-0 rounded-xl object-cover"
+								loading="lazy"
+							/>
+						) : (
+							<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
+								<UtensilsCrossed className="h-5 w-5 text-[#EF7D1A]" />
+							</div>
+						)}
 						<div>
 							<p className="text-sm font-bold">{dish.name}</p>
 							<p className="text-xs font-semibold text-[#EF7D1A]">

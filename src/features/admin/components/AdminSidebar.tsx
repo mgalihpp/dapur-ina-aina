@@ -1,13 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
 	BarChart3,
-	Bell,
+	Boxes,
 	ClipboardList,
-	Home,
 	LayoutGrid,
 	Sandwich,
-	Send,
-	Settings,
+	Tags,
 	Users,
 } from "lucide-react";
 import {
@@ -17,14 +15,19 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 type AdminSidebarProps = {
-	active?: "dashboard" | "orders" | "menu" | "reports";
+	active?:
+		| "dashboard"
+		| "orders"
+		| "menu"
+		| "categories"
+		| "stock"
+		| "reports"
+		| "users";
 };
 
 export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 	const navigate = useNavigate();
-
-	const NAV: SidebarItem[] = [
-		{ icon: Home, label: "Beranda", to: "/admin" },
+	const items: SidebarItem[] = [
 		{
 			icon: LayoutGrid,
 			label: "Dasbor",
@@ -39,20 +42,34 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 		},
 		{
 			icon: Sandwich,
-			label: "Menu",
-			to: "/admin/menu",
+			label: "Produk",
 			active: active === "menu",
+			to: "/admin/menu",
+		},
+		{
+			icon: Tags,
+			label: "Kategori",
+			active: active === "categories",
+			to: "/admin/categories",
+		},
+		{
+			icon: Boxes,
+			label: "Stok",
+			active: active === "stock",
+			to: "/admin/stock",
 		},
 		{
 			icon: BarChart3,
 			label: "Laporan",
-			to: "/admin/reports",
 			active: active === "reports",
+			to: "/admin/reports",
 		},
-		{ icon: Bell, label: "Notifikasi" },
-		{ icon: Users, label: "Pelanggan" },
-		{ icon: Send, label: "Pesan" },
-		{ icon: Settings, label: "Pengaturan" },
+		{
+			icon: Users,
+			label: "Pengguna",
+			active: active === "users",
+			to: "/admin/users",
+		},
 	];
 
 	async function logout() {
@@ -62,7 +79,7 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 
 	return (
 		<AppSidebar
-			items={NAV}
+			items={items}
 			onNavigate={(to) => void navigate({ to })}
 			onLogout={() => void logout()}
 		/>

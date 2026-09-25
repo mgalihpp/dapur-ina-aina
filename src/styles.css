@@ -113,6 +113,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media print {
+	body * {
+		visibility: hidden !important;
+	}
+	[data-print-invoice],
+	[data-print-invoice] * {
+		visibility: visible !important;
+	}
+	[data-print-invoice] {
+		position: fixed;
+		inset: 0;
+		width: 100%;
+		max-width: none;
+		overflow: visible;
+	}
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -140,15 +157,17 @@ body::after {
   mask-image: radial-gradient(circle at 50% 30%, black, transparent 78%);
 }
 
-a {
-  color: var(--lagoon-deep);
-  text-decoration-color: rgba(50, 143, 151, 0.4);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
+@layer base {
+	a {
+		color: var(--lagoon-deep);
+		text-decoration-color: rgba(50, 143, 151, 0.4);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 2px;
+	}
 
-a:hover {
-  color: #246f76;
+	a:hover {
+		color: #246f76;
+	}
 }
 
 code {

@@ -3,10 +3,14 @@ import { ChevronLeft, ImagePlus } from "lucide-react";
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
-	createProduct,
-	listKategori,
-	updateProduct,
-} from "@/server/product-functions";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { listCategories } from "@/server/category-functions";
+import { createProduct, updateProduct } from "@/server/product-functions";
 import type { AdminProduct, ImageSource, ProductFormMode } from "../types";
 import { ImageSourceModal } from "./ImageSourceModal";
 
@@ -66,7 +70,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 
 	useEffect(() => {
 		let alive = true;
-		listKategori()
+		listCategories()
 			.then((rows) => {
 				if (alive) setKategoris(rows);
 			})
@@ -137,9 +141,9 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		event.preventDefault();
 		const next: typeof errors = {};
 		if (!fields.name.trim()) next.name = "Nama produk wajib diisi.";
-		const price = Number(fields.price);
-		if (!fields.price.trim() || !Number.isFinite(price) || price <= 0) {
-			next.price = "Harga harus berupa angka lebih dari 0.";
+		const price = fields.price.trim();
+		if (!/^\d{1,8}(\.\d{1,2})?$/.test(price) || Number(price) <= 0) {
+			next.price = "Harga harus maksimal 2 angka desimal dan lebih dari 0.";
 		}
 		const stok = Number(fields.stok);
 		if (!fields.stok.trim() || !Number.isInteger(stok) || stok < 0) {
@@ -150,20 +154,19 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		if (Object.keys(next).length > 0) return;
 		setSaving(true);
 		try {
-			const payload = {
+			const details = {
 				namaProduk: fields.name.trim(),
 				harga: price,
-				stok,
 				kategoriId: Number(fields.kategoriId),
 				gambar:
 					fields.gambar.trim() ||
 					(preview && !preview.startsWith("blob:") ? preview : null),
 			};
 			if (mode === "add") {
-				await createProduct({ data: payload });
+				await createProduct({ data: { ...details, stok } });
 			} else {
 				if (!initial) throw new Error("Produk tidak ditemukan");
-				await updateProduct({ data: { id: initial.id, ...payload } });
+				await updateProduct({ data: { id: initial.id, ...details } });
 			}
 			navigate({ to: "/admin/menu" });
 		} catch (e) {
@@ -238,27 +241,36 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 							)}
 						</div>
 						<div>
-							<label
-								htmlFor="product-category"
+							<span
+								id="product-category-label"
 								className="mb-1 block text-[13px] font-bold text-neutral-900"
 							>
 								Kategori :
-							</label>
-							<select
-								id="product-category"
-								value={fields.kategoriId}
-								onChange={(event) =>
-									updateField("kategoriId", event.target.value)
-								}
-								className={`${fieldClass(Boolean(errors.kategori))} bg-white`}
+							</span>
+							<Select
+								value={fields.kategoriId || undefined}
+								onValueChange={(value) => updateField("kategoriId", value)}
 							>
-								<option value="">Pilih Kategori</option>
-								{kategoris.map((k) => (
-									<option key={k.id} value={k.id}>
-										{k.namaKategori}
-									</option>
-								))}
-							</select>
+								<SelectTrigger
+									id="product-category"
+									aria-labelledby="product-category-label"
+									aria-invalid={Boolean(errors.kategori)}
+									className={`w-full rounded-lg bg-white px-3 py-2.5 text-sm text-neutral-900 ${
+										errors.kategori
+											? "border-red-500 ring-1 ring-red-500"
+											: "border-neutral-200"
+									}`}
+								>
+									<SelectValue placeholder="Pilih Kategori" />
+								</SelectTrigger>
+								<SelectContent>
+									{kategoris.map((k) => (
+										<SelectItem key={k.id} value={String(k.id)}>
+											{k.namaKategori}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 							{errors.kategori && (
 								<p className="mt-1 text-xs text-red-500">{errors.kategori}</p>
 							)}
@@ -283,26 +295,28 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 								<p className="mt-1 text-xs text-red-500">{errors.price}</p>
 							)}
 						</div>
-						<div>
-							<label
-								htmlFor="product-stok"
-								className="mb-1 block text-[13px] font-bold text-neutral-900"
-							>
-								Stok :
-							</label>
-							<input
-								id="product-stok"
-								type="text"
-								inputMode="numeric"
-								value={fields.stok}
-								onChange={(event) => updateField("stok", event.target.value)}
-								placeholder="40"
-								className={fieldClass(Boolean(errors.stok))}
-							/>
-							{errors.stok && (
-								<p className="mt-1 text-xs text-red-500">{errors.stok}</p>
-							)}
-						</div>
+						{mode === "add" ? (
+							<div>
+								<label
+									htmlFor="product-stok"
+									className="mb-1 block text-[13px] font-bold text-neutral-900"
+								>
+									Stok :
+								</label>
+								<input
+									id="product-stok"
+									type="text"
+									inputMode="numeric"
+									value={fields.stok}
+									onChange={(event) => updateField("stok", event.target.value)}
+									placeholder="40"
+									className={fieldClass(Boolean(errors.stok))}
+								/>
+								{errors.stok && (
+									<p className="mt-1 text-xs text-red-500">{errors.stok}</p>
+								)}
+							</div>
+						) : null}
 						<div className="md:col-span-2">
 							<label
 								htmlFor="product-gambar"

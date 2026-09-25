@@ -9,7 +9,13 @@ export function AdminShell() {
 			? "orders"
 			: pathname.startsWith("/admin/reports")
 				? "reports"
-				: "dashboard";
+				: pathname.startsWith("/admin/categories")
+					? "categories"
+					: pathname.startsWith("/admin/stock")
+						? "stock"
+						: pathname.startsWith("/admin/users")
+							? "users"
+							: "dashboard";
 
 	return (
 		<div className="flex h-dvh overflow-hidden bg-[#F5F6F8] text-neutral-900">

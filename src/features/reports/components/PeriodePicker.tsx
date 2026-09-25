@@ -185,14 +185,9 @@ export function PeriodePicker({ range, onApply }: PeriodePickerProps) {
 									setActiveShot(null);
 								}}
 								numberOfMonths={2}
-								showWeekNumber
 							/>
 						</div>
-						<div className="mt-2 flex items-center justify-between gap-2 border-t border-neutral-100 pt-3">
-							<p className="text-xs text-neutral-500">
-								Rentang pas seminggu/sebulan penuh otomatis tersimpan; rentang
-								lain hanya dihitung.
-							</p>
+						<div className="mt-2 flex items-center justify-end gap-2 border-t border-neutral-100 pt-3">
 							<div className="flex shrink-0 gap-2">
 								<Button variant="ghost" onClick={() => setOpen(false)}>
 									Batal

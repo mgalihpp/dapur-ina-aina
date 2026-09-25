@@ -21,6 +21,7 @@ export type BestDish = {
 	name: string;
 	price: number;
 	orders: number;
+	image: string | null;
 };
 
 export type PeriodData = {

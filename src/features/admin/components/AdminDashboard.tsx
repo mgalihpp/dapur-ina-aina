@@ -1,5 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { getDashboard } from "@/server/dashboard-functions";
+import { getStockOverview } from "@/server/stock-functions";
 import type { DashboardPeriod, PeriodData } from "../types";
 import { BestDishesList } from "./BestDishesList";
 import { DailySellingChart } from "./DailySellingChart";
@@ -13,6 +15,9 @@ export function AdminDashboard() {
 	const [data, setData] = useState<PeriodData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [lowStock, setLowStock] = useState<
+		Awaited<ReturnType<typeof getStockOverview>>
+	>([]);
 
 	useEffect(() => {
 		let alive = true;
@@ -38,6 +43,20 @@ export function AdminDashboard() {
 		};
 	}, [period]);
 
+	useEffect(() => {
+		let active = true;
+		getStockOverview()
+			.then((rows) => {
+				if (active) setLowStock(rows.filter((row) => row.low));
+			})
+			.catch(() => {
+				if (active) setLowStock([]);
+			});
+		return () => {
+			active = false;
+		};
+	}, []);
+
 	return (
 		<div className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
 			<div className="flex flex-wrap items-center justify-between gap-3">
@@ -50,6 +69,36 @@ export function AdminDashboard() {
 					{error}
 				</p>
 			) : null}
+			<section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+				<div className="flex items-center justify-between gap-3">
+					<div>
+						<h2 className="font-bold text-amber-950">
+							Peringatan stok menipis
+						</h2>
+						<p className="mt-1 text-sm text-amber-900">
+							{lowStock.length} produk memiliki stok 5 atau kurang.
+						</p>
+					</div>
+					<Link
+						to="/admin/stock"
+						className="shrink-0 rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-950"
+					>
+						Kelola stok
+					</Link>
+				</div>
+				{lowStock.length ? (
+					<ul className="mt-3 flex flex-wrap gap-2">
+						{lowStock.slice(0, 8).map((row) => (
+							<li
+								key={row.id}
+								className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-amber-950"
+							>
+								{row.name} · {row.stock}
+							</li>
+						))}
+					</ul>
+				) : null}
+			</section>
 			{loading ? (
 				<p className="mt-6 text-sm text-neutral-500">Memuat dasbor…</p>
 			) : !data ||

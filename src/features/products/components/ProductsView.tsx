@@ -1,5 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { listCategories } from "@/server/category-functions";
 import { deleteProduct, listProducts } from "@/server/product-functions";
 import type { AdminProduct, DeleteTarget } from "../types";
 import { DeleteProductModal } from "./DeleteProductModal";
@@ -12,12 +20,19 @@ export function ProductsView() {
 	const [error, setError] = useState<string | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
 	const [deleting, setDeleting] = useState(false);
+	const [categories, setCategories] = useState<
+		{ id: number; namaKategori: string }[]
+	>([]);
+	const [categoryId, setCategoryId] = useState("all");
 
 	useEffect(() => {
 		let alive = true;
-		listProducts()
-			.then((rows) => {
-				if (alive) setProducts(rows);
+		Promise.all([listProducts(), listCategories()])
+			.then(([rows, categoryRows]) => {
+				if (alive) {
+					setProducts(rows);
+					setCategories(categoryRows);
+				}
 			})
 			.catch((e: unknown) => {
 				if (alive)
@@ -30,6 +45,11 @@ export function ProductsView() {
 			alive = false;
 		};
 	}, []);
+
+	const filteredProducts =
+		categoryId === "all"
+			? products
+			: products.filter((product) => String(product.kategoriId) === categoryId);
 
 	async function confirmDelete() {
 		if (!deleteTarget || deleting) return;
@@ -63,18 +83,44 @@ export function ProductsView() {
 					{error}
 				</p>
 			) : null}
-			<div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-100 bg-white shadow-sm">
+			<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border border-neutral-100 bg-white px-4 py-3">
+				<div className="flex items-center gap-2 text-sm text-neutral-600">
+					<span>Kategori</span>
+					<Select value={categoryId} onValueChange={setCategoryId}>
+						<SelectTrigger
+							aria-label="Filter kategori"
+							className="w-[200px] rounded-lg border-neutral-200 bg-white text-neutral-900"
+						>
+							<SelectValue placeholder="Semua kategori" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Semua kategori</SelectItem>
+							{categories.map((category) => (
+								<SelectItem key={category.id} value={String(category.id)}>
+									{category.namaKategori}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<p className="text-sm text-neutral-500">
+					{filteredProducts.length} produk
+				</p>
+			</div>
+			<div className="overflow-x-auto rounded-b-2xl border border-t-0 border-neutral-100 bg-white shadow-sm">
 				{loading ? (
 					<p className="px-4 py-8 text-center text-sm text-neutral-500">
 						Memuat produk…
 					</p>
-				) : products.length === 0 ? (
+				) : filteredProducts.length === 0 ? (
 					<p className="px-4 py-8 text-center text-sm text-neutral-500">
-						Belum ada produk. Tambahkan produk pertama lewat tombol di atas.
+						{products.length === 0
+							? "Belum ada produk. Tambahkan produk pertama lewat tombol di atas."
+							: "Tidak ada produk dalam kategori ini."}
 					</p>
 				) : (
 					<ProductTable
-						products={products}
+						products={filteredProducts}
 						onEdit={(product) =>
 							navigate({
 								to: "/admin/menu/$productId/edit",

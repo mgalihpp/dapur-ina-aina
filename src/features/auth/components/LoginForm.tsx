@@ -5,11 +5,11 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { userRoleOf } from "@/lib/roles";
 import { getSession } from "@/server/auth-functions";
-import { isValidEmail } from "../lib/validation";
+import { isValidEmail, loginMethodFor } from "../lib/validation";
 
 export function LoginForm() {
 	const navigate = useNavigate();
-	const [email, setEmail] = useState("");
+	const [identifier, setIdentifier] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
@@ -17,8 +17,13 @@ export function LoginForm() {
 	async function onSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError(null);
-		if (!isValidEmail(email.trim())) {
-			setError("Masukkan alamat email yang valid.");
+		const value = identifier.trim();
+		if (!value) {
+			setError("Masukkan username atau alamat email.");
+			return;
+		}
+		if (loginMethodFor(value) === "email" && !isValidEmail(value)) {
+			setError("Masukkan username atau alamat email yang valid.");
 			return;
 		}
 		if (password.length < 8) {
@@ -27,12 +32,12 @@ export function LoginForm() {
 		}
 		setPending(true);
 		try {
-			const res = await authClient.signIn.email({
-				email: email.trim(),
-				password,
-			});
+			const res =
+				loginMethodFor(value) === "email"
+					? await authClient.signIn.email({ email: value, password })
+					: await authClient.signIn.username({ username: value, password });
 			if (res.error) {
-				setError("Email atau kata sandi salah. Coba lagi.");
+				setError("Username/email atau kata sandi salah. Coba lagi.");
 				return;
 			}
 			const session = await getSession();
@@ -41,7 +46,7 @@ export function LoginForm() {
 				to: role === "admin" ? "/admin" : role === "kasir" ? "/kasir" : "/",
 			});
 		} catch {
-			setError("Email atau kata sandi salah. Coba lagi.");
+			setError("Username/email atau kata sandi salah. Coba lagi.");
 		} finally {
 			setPending(false);
 		}
@@ -55,18 +60,18 @@ export function LoginForm() {
 
 			<form onSubmit={onSubmit} noValidate className="space-y-4">
 				<label className="block">
-					<span className="sr-only">Alamat Email</span>
+					<span className="sr-only">Username atau alamat email</span>
 					<span className="relative block">
 						<AtSign
 							aria-hidden
 							className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#EF7D1A]"
 						/>
 						<input
-							type="email"
-							autoComplete="email"
-							placeholder="Alamat Email"
-							value={email}
-							onChange={(event) => setEmail(event.target.value)}
+							type="text"
+							autoComplete="username"
+							placeholder="Username atau alamat email"
+							value={identifier}
+							onChange={(event) => setIdentifier(event.target.value)}
 							className="w-full rounded-lg border border-neutral-300 bg-white py-3 pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-[#EF7D1A] focus:outline-none focus:ring-2 focus:ring-[#EF7D1A]/30"
 						/>
 					</span>

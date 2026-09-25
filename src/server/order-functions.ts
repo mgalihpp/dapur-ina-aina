@@ -1,101 +1,252 @@
+import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
 import { ensureStaff } from "./guards";
-import { parseIdInput } from "./validators";
+import { assertOrderTransition, sumOrderTotal } from "./order-domain";
+import {
+	parseOrderFilterInput,
+	parseOrderInput,
+	parseOrderStatusInput,
+} from "./validators";
 
 export type AdminOrderRow = {
 	id: string;
-	table: string;
-	guest: number;
-	total: number;
-	payment: "Paid" | "Unpaid";
+	total: string;
+	paymentStatus: "lunas" | "belum_lunas" | null;
 	status: "diproses" | "selesai" | "dibatalkan";
 	tanggal: string;
 	kasir: string;
 };
 
 export type AdminOrderDetail = AdminOrderRow & {
-	customer: string;
-	paymentMethod: string;
-	items: { id: string; name: string; qty: number; price: number }[];
+	paymentMethod: "tunai" | "non_tunai" | null;
+	paymentAmount: string | null;
+	paymentDate: string | null;
+	change: string | null;
+	items: {
+		id: string;
+		name: string;
+		qty: number;
+		price: string;
+		subtotal: string;
+	}[];
 };
 
-type OrderRowSource = {
-	id: number;
-	total: { toString(): string };
-	status: "diproses" | "selesai" | "dibatalkan";
-	tanggal: Date;
-	user: { name: string };
-	pembayaran: { status: string; metode: string } | null;
-	detail: { jumlah: number }[];
-};
+type OrderRowSource = Prisma.PesananGetPayload<{
+	include: {
+		user: { select: { name: true } };
+		pembayaran: { select: { status: true } };
+	};
+}>;
 
-function toRow(o: OrderRowSource): AdminOrderRow {
+function toRow(order: OrderRowSource): AdminOrderRow {
 	return {
-		id: String(o.id),
-		table: "-",
-		guest: o.detail.reduce((s, x) => s + x.jumlah, 0),
-		total: Number(o.total.toString()),
-		payment: o.pembayaran?.status === "lunas" ? "Paid" : "Unpaid",
-		status: o.status,
-		tanggal: o.tanggal.toISOString().slice(0, 10),
-		kasir: o.user.name,
+		id: String(order.id),
+		total: order.total.toFixed(2),
+		paymentStatus: order.pembayaran?.status ?? null,
+		status: order.status,
+		tanggal: order.tanggal.toISOString().slice(0, 10),
+		kasir: order.user.name,
 	};
 }
 
-// Daftar pesanan untuk admin: yang belum selesai dulu (diproses), lalu terbaru.
-export const listOrders = createServerFn({ method: "GET" }).handler(
-	async () => {
-		await ensureStaff();
-		const rows = await prisma.pesanan.findMany({
-			include: {
-				user: { select: { name: true } },
-				pembayaran: { select: { status: true, metode: true } },
-				detail: { select: { jumlah: true } },
-			},
-			orderBy: [{ status: "asc" }, { id: "desc" }],
-			take: 100,
-		});
-		return rows.map(toRow);
-	},
-);
+function dateFilter(
+	value: string | undefined,
+	exclusive = false,
+): Date | undefined {
+	if (!value) return undefined;
+	const date = new Date(`${value}T00:00:00.000Z`);
+	if (exclusive) date.setUTCDate(date.getUTCDate() + 1);
+	return date;
+}
 
-export const getOrderDetail = createServerFn({ method: "GET" })
-	.validator(parseIdInput)
+export const listOrders = createServerFn({ method: "GET" })
+	.validator(parseOrderFilterInput)
 	.handler(async ({ data }) => {
 		await ensureStaff();
-		const o = await prisma.pesanan.findUnique({
+		const rows = await prisma.pesanan.findMany({
+			where: {
+				status: data.status,
+				tanggal:
+					data.start || data.end
+						? {
+								gte: dateFilter(data.start),
+								lt: dateFilter(data.end, true),
+							}
+						: undefined,
+				detail: data.product
+					? { some: { produk: { namaProduk: { contains: data.product } } } }
+					: undefined,
+			},
+			include: {
+				user: { select: { name: true } },
+				pembayaran: { select: { status: true } },
+			},
+			orderBy: [{ status: "asc" }, { id: "desc" }],
+			take: 200,
+		});
+		return rows.map(toRow);
+	});
+
+export const getOrderDetail = createServerFn({ method: "GET" })
+	.validator((input: { id: string | number }) => {
+		const id = Number(input.id);
+		if (!Number.isInteger(id) || id <= 0) throw new Error("id tidak valid");
+		return { id };
+	})
+	.handler(async ({ data }) => {
+		await ensureStaff();
+		const order = await prisma.pesanan.findUnique({
 			where: { id: data.id },
 			include: {
 				user: { select: { name: true } },
 				pembayaran: true,
-				detail: {
-					include: { produk: { select: { namaProduk: true } } },
-				},
+				detail: { include: { produk: { select: { namaProduk: true } } } },
 			},
 		});
-		if (!o) throw new Error("Pesanan tidak ditemukan");
-		const base = toRow({
-			...o,
-			pembayaran: o.pembayaran
-				? { status: o.pembayaran.status, metode: o.pembayaran.metode }
-				: null,
-		});
-		const detail: AdminOrderDetail = {
-			...base,
-			customer: o.user.name,
-			paymentMethod:
-				o.pembayaran?.metode === "tunai"
-					? "Tunai"
-					: o.pembayaran?.metode === "non_tunai"
-						? "Non-tunai"
-						: "-",
-			items: o.detail.map((x) => ({
-				id: String(x.id),
-				name: x.produk.namaProduk,
-				qty: x.jumlah,
-				price: Number(x.harga.toString()),
+		if (!order) throw new Error("Pesanan tidak ditemukan.");
+		return {
+			...toRow(order),
+			paymentMethod: order.pembayaran?.metode ?? null,
+			paymentAmount: order.pembayaran?.jumlahBayar.toFixed(2) ?? null,
+			paymentDate: order.pembayaran?.tanggal.toISOString().slice(0, 10) ?? null,
+			change:
+				order.pembayaran?.status === "lunas" &&
+				order.pembayaran.metode === "tunai"
+					? order.pembayaran.jumlahBayar.minus(order.total).toFixed(2)
+					: null,
+			items: order.detail.map((item) => ({
+				id: String(item.id),
+				name: item.produk.namaProduk,
+				qty: item.jumlah,
+				price: item.harga.toFixed(2),
+				subtotal: item.subtotal.toFixed(2),
 			})),
 		};
-		return detail;
+	});
+
+export const createOrder = createServerFn({ method: "POST" })
+	.validator(parseOrderInput)
+	.handler(async ({ data }) => {
+		const session = await ensureStaff();
+		return prisma.$transaction(async (tx) => {
+			const productIds = data.items
+				.map((item) => item.productId)
+				.sort((left, right) => left - right);
+			await tx.$queryRaw`
+				SELECT id FROM tb_produk
+				WHERE id IN (${Prisma.join(productIds)})
+				ORDER BY id
+				FOR UPDATE
+			`;
+			const products = await tx.produk.findMany({
+				where: { id: { in: productIds } },
+				select: { id: true, namaProduk: true, harga: true },
+			});
+			if (products.length !== data.items.length)
+				throw new Error("Satu atau lebih produk tidak ditemukan.");
+
+			const productsById = new Map(
+				products.map((product) => [product.id, product]),
+			);
+			const orderItems = data.items.map((item) => {
+				const product = productsById.get(item.productId);
+				if (!product) throw new Error("Produk tidak ditemukan.");
+				return {
+					...item,
+					name: product.namaProduk,
+					price: product.harga,
+					subtotal: product.harga.mul(item.quantity),
+				};
+			});
+
+			for (const item of orderItems) {
+				const changed = await tx.produk.updateMany({
+					where: { id: item.productId, stok: { gte: item.quantity } },
+					data: { stok: { decrement: item.quantity } },
+				});
+				if (changed.count !== 1)
+					throw new Error(
+						`Stok ${item.name} tidak mencukupi. Muat ulang daftar produk.`,
+					);
+			}
+
+			const total = new Prisma.Decimal(
+				sumOrderTotal(
+					orderItems.map((item) => ({
+						price: item.price.toString(),
+						quantity: item.quantity,
+					})),
+				),
+			);
+			const order = await tx.pesanan.create({
+				data: {
+					userId: session.user.id,
+					tanggal: new Date(),
+					total,
+					status: "diproses",
+					detail: {
+						create: orderItems.map((item) => ({
+							produkId: item.productId,
+							jumlah: item.quantity,
+							harga: item.price,
+							subtotal: item.subtotal,
+						})),
+					},
+				},
+				select: { id: true, total: true },
+			});
+			await tx.stok.createMany({
+				data: orderItems.map((item) => ({
+					produkId: item.productId,
+					jumlah: item.quantity,
+					jenis: "keluar",
+					tanggal: new Date(),
+				})),
+			});
+			return { id: order.id, total: order.total.toFixed(2) };
+		});
+	});
+
+export const setOrderStatus = createServerFn({ method: "POST" })
+	.validator(parseOrderStatusInput)
+	.handler(async ({ data }) => {
+		await ensureStaff();
+		return prisma.$transaction(async (tx) => {
+			await tx.$queryRaw`SELECT id FROM tb_pesanan WHERE id = ${data.id} FOR UPDATE`;
+			const order = await tx.pesanan.findUnique({
+				where: { id: data.id },
+				include: { detail: true, pembayaran: true },
+			});
+			if (!order) throw new Error("Pesanan tidak ditemukan.");
+			assertOrderTransition({
+				current: order.status,
+				target: data.status,
+				paymentStatus: order.pembayaran?.status ?? null,
+			});
+			await tx.pesanan.update({
+				where: { id: data.id },
+				data: { status: data.status },
+			});
+			if (data.status === "dibatalkan") {
+				if (order.pembayaran?.status === "belum_lunas") {
+					await tx.pembayaran.delete({ where: { id: order.pembayaran.id } });
+				}
+				for (const item of order.detail) {
+					await tx.produk.update({
+						where: { id: item.produkId },
+						data: { stok: { increment: item.jumlah } },
+					});
+					await tx.stok.create({
+						data: {
+							produkId: item.produkId,
+							jumlah: item.jumlah,
+							jenis: "masuk",
+							tanggal: new Date(),
+						},
+					});
+				}
+			}
+			return { id: order.id, status: data.status };
+		});
 	});

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { auth } from "../src/lib/auth";
 import { prisma } from "../src/lib/prisma";
 
@@ -5,6 +6,37 @@ const CATEGORIES = ["Makanan Utama", "Appetizer", "Minuman"];
 
 const ADMIN_EMAIL = process.env["ADMIN_EMAIL"] ?? "admin@dapurinaaina.id";
 const ADMIN_PASSWORD = process.env["ADMIN_PASSWORD"] ?? "InaAina123!";
+
+async function createSeedStaff(data: {
+	name: string;
+	email: string;
+	username: string;
+	password: string;
+	role: "admin" | "kasir";
+}) {
+	const context = await auth.$context;
+	const password = await context.password.hash(data.password);
+	return prisma.$transaction(async (tx) => {
+		const user = await tx.user.create({
+			data: {
+				name: data.name,
+				email: data.email,
+				username: data.username,
+				role: data.role,
+				emailVerified: true,
+			},
+		});
+		await tx.account.create({
+			data: {
+				accountId: user.id,
+				providerId: "credential",
+				userId: user.id,
+				password,
+			},
+		});
+		return user;
+	});
+}
 
 type SeedProduct = {
 	nama: string;
@@ -166,7 +198,7 @@ async function seedProducts(kategoriIds: Map<string, number>): Promise<void> {
 		const created = await prisma.produk.create({
 			data: {
 				namaProduk: p.nama,
-				harga: p.harga,
+				harga: new Prisma.Decimal(p.harga),
 				stok: p.stok,
 				gambar: p.gambar,
 				kategoriId,
@@ -190,14 +222,14 @@ async function seedKasir(): Promise<string> {
 		where: { email: KASIR_EMAIL },
 	});
 	if (!existing) {
-		await auth.api.signUpEmail({
-			body: {
-				name: "Kasir Utama",
-				email: KASIR_EMAIL,
-				password: KASIR_PASSWORD,
-			},
+		await createSeedStaff({
+			name: "Kasir Utama",
+			email: KASIR_EMAIL,
+			username: "kasir",
+			password: KASIR_PASSWORD,
+			role: "kasir",
 		});
-		console.log(`kasir signed up: ${KASIR_EMAIL}`);
+		console.log(`kasir created: ${KASIR_EMAIL}`);
 	}
 	const kasir = await prisma.user.update({
 		where: { email: KASIR_EMAIL },
@@ -337,15 +369,18 @@ async function seedOrders(kasirId: string): Promise<void> {
 				if (!prod) throw new Error(`Produk tidak ada: ${item.nama}`);
 				if (prod.stok < item.jumlah)
 					throw new Error(`Stok kurang untuk ${item.nama}`);
-				const harga = Number(prod.harga.toString());
+				const harga = prod.harga;
 				return {
 					prod,
 					jumlah: item.jumlah,
 					harga,
-					subtotal: harga * item.jumlah,
+					subtotal: harga.mul(item.jumlah),
 				};
 			});
-			const total = lines.reduce((s, x) => s + x.subtotal, 0);
+			const total = lines.reduce(
+				(sum, line) => sum.plus(line.subtotal),
+				new Prisma.Decimal(0),
+			);
 			const pesanan = await tx.pesanan.create({
 				data: { userId: kasirId, tanggal, total, status: o.status },
 			});
@@ -390,14 +425,18 @@ async function seedOrders(kasirId: string): Promise<void> {
 					});
 				}
 			} else if (o.bayar) {
-				const jumlahBayar = o.bayar.lunas ? total : Math.max(total - 5000, 0);
+				const jumlahBayar = o.bayar.lunas
+					? total
+					: Prisma.Decimal.max(total.minus(5000), 0);
 				await tx.pembayaran.create({
 					data: {
 						pesananId: pesanan.id,
 						metode: o.bayar.metode,
 						jumlahBayar,
 						tanggal,
-						status: jumlahBayar >= total ? "lunas" : "belum_lunas",
+						status: jumlahBayar.greaterThanOrEqualTo(total)
+							? "lunas"
+							: "belum_lunas",
 					},
 				});
 			}
@@ -434,22 +473,20 @@ async function seedLaporan(): Promise<void> {
 		console.log("laporan skipped: belum ada pesanan selesai+lunas");
 		return;
 	}
-	const sums = new Map<string, number>();
+	const sums = new Map<string, Prisma.Decimal>();
 	for (const o of orders) {
 		const d = new Date(o.tanggal);
-		const amount = Number(o.total.toString());
 		for (const key of [monthKey(d), isoWeekKey(d)]) {
-			sums.set(key, (sums.get(key) ?? 0) + amount);
+			sums.set(key, (sums.get(key) ?? new Prisma.Decimal(0)).plus(o.total));
 		}
 	}
 	for (const [periode, total] of sums) {
-		const rounded = Math.round(total * 100) / 100;
 		await prisma.laporanPenjualan.upsert({
 			where: { periode },
-			create: { periode, totalPenjualan: rounded },
-			update: { totalPenjualan: rounded },
+			create: { periode, totalPenjualan: total },
+			update: { totalPenjualan: total },
 		});
-		console.log(`laporan upsert: ${periode} = ${rounded}`);
+		console.log(`laporan upsert: ${periode} = ${total.toFixed(2)}`);
 	}
 }
 
@@ -458,14 +495,14 @@ async function seedAdmin(): Promise<void> {
 		where: { email: ADMIN_EMAIL },
 	});
 	if (!existing) {
-		await auth.api.signUpEmail({
-			body: {
-				name: "Administrator",
-				email: ADMIN_EMAIL,
-				password: ADMIN_PASSWORD,
-			},
+		await createSeedStaff({
+			name: "Administrator",
+			email: ADMIN_EMAIL,
+			username: "admin",
+			password: ADMIN_PASSWORD,
+			role: "admin",
 		});
-		console.log(`admin signed up: ${ADMIN_EMAIL}`);
+		console.log(`admin created: ${ADMIN_EMAIL}`);
 	}
 	await prisma.user.update({
 		where: { email: ADMIN_EMAIL },

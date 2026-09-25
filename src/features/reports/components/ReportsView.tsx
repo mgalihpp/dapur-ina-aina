@@ -56,7 +56,15 @@ const KIND_STYLE: Record<string, string> = {
 };
 
 function kindLabel(kind: PeriodeKind | null): string {
-	return kind === "mingguan" ? "Mingguan" : "Bulanan";
+	if (kind === "mingguan") return "Mingguan";
+	if (kind === "bulanan") return "Bulanan";
+	return "Kustom";
+}
+
+function detailKindOf(periode: string): PeriodeKind | null {
+	if (/^\d{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$/.test(periode)) return "mingguan";
+	if (/^\d{4}-(0[1-9]|1[0-2])$/.test(periode)) return "bulanan";
+	return null;
 }
 
 function metodeLabel(metode: string | null): string {
@@ -167,10 +175,10 @@ export function ReportsView() {
 				const saved = await generateLaporan({ data: { periode: exact } });
 				if (saved.empty) {
 					setNotice(
-						`Tidak ada pesanan selesai+lunas pada ${label} — laporan tidak disimpan.`,
+						`Tidak ada pesanan selesai+lunas pada ${label} — tersimpan Rp0 agar teraudit.`,
 					);
-					setDetail({ periode: label, tersimpan: null, pesanan: [] });
-					return;
+				} else {
+					setNotice(null);
 				}
 				await refresh();
 				await openDetail(saved.periode);
@@ -242,9 +250,6 @@ export function ReportsView() {
 			<div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
 				<div>
 					<h1 className="text-xl font-bold sm:text-2xl">Laporan Penjualan</h1>
-					<p className="mt-1 text-sm text-neutral-500">
-						Rekap pesanan selesai & lunas per minggu atau bulan.
-					</p>
 				</div>
 				<div className="flex gap-2">
 					<button
@@ -375,9 +380,6 @@ export function ReportsView() {
 							<p className="mt-3 text-sm font-bold text-neutral-900">
 								Belum ada laporan tersimpan
 							</p>
-							<p className="mt-1 text-xs text-neutral-400">
-								Pilih rentang tanggal di atas lalu generate.
-							</p>
 						</div>
 					) : (
 						<ul className="max-h-[480px] divide-y divide-neutral-100 overflow-y-auto p-2">
@@ -421,17 +423,41 @@ export function ReportsView() {
 				</section>
 
 				<section className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-					<div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 px-5 py-3.5">
-						<h2 className="text-sm font-bold">
-							{detail ? `Pesanan · ${detail.periode}` : "Detail pesanan"}
-						</h2>
+					<div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-gradient-to-r from-orange-50/70 via-white to-white px-5 py-4">
+						<div className="flex min-w-0 items-center gap-3">
+							<span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#F97316] text-white shadow-sm">
+								<ReceiptText className="size-5" />
+							</span>
+							<span className="min-w-0">
+								<span className="flex flex-wrap items-center gap-2">
+									<h2 className="truncate text-base font-bold text-neutral-900">
+										{detail ? `Pesanan · ${detail.periode}` : "Detail pesanan"}
+									</h2>
+									{detail ? (
+										<span
+											className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${KIND_STYLE[detailKindOf(detail.periode) ?? ""] ?? "bg-neutral-100 text-neutral-500"}`}
+										>
+											{kindLabel(detailKindOf(detail.periode))}
+										</span>
+									) : null}
+								</span>
+								<span className="mt-0.5 block text-xs text-neutral-500">
+									{detail && detail.pesanan.length > 0
+										? `${detail.pesanan.length} pesanan`
+										: "Rincian pesanan"}
+								</span>
+							</span>
+						</div>
 						{detail && detail.pesanan.length > 0 ? (
-							<p className="text-sm text-neutral-500">
-								{detail.pesanan.length} pesanan · Total{" "}
-								<span className="font-bold text-neutral-900">
+							<div className="flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2 text-white shadow-sm">
+								<Wallet className="size-4 text-orange-300" />
+								<span className="text-xs font-medium text-neutral-300">
+									Total
+								</span>
+								<span className="text-sm font-bold tabular-nums">
 									{fmtRp(liveTotal)}
 								</span>
-							</p>
+							</div>
 						) : null}
 					</div>
 					{outOfSync ? (
@@ -447,19 +473,12 @@ export function ReportsView() {
 							<p className="mt-3 text-sm font-bold text-neutral-900">
 								Pilih laporan untuk melihat rinciannya
 							</p>
-							<p className="mt-1 max-w-[320px] text-xs text-neutral-400">
-								Klik salah satu laporan tersimpan, atau generate dari rentang
-								tanggal di atas.
-							</p>
 						</div>
 					) : detail.pesanan.length === 0 ? (
 						<div className="flex flex-col items-center px-5 py-10 text-center">
 							<EmptyVector label="Tidak ada pesanan pada rentang ini" />
 							<p className="mt-3 text-sm font-bold text-neutral-900">
 								Tidak ada pesanan pada rentang ini
-							</p>
-							<p className="mt-1 max-w-[320px] text-xs text-neutral-400">
-								Belum ada pesanan selesai dan lunas di {detail.periode}.
 							</p>
 						</div>
 					) : (

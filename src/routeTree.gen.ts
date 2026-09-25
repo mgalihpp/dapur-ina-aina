@@ -14,13 +14,19 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as KasirRouteImport } from './routes/kasir'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminMenuRouteImport } from './routes/admin.menu'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminStockRouteImport } from './routes/admin.stock'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as KasirIndexRouteImport } from './routes/kasir.index'
+import { Route as KasirOrdersRouteImport } from './routes/kasir.orders'
+import { Route as KasirPosRouteImport } from './routes/kasir.pos'
+import { Route as KasirStockRouteImport } from './routes/kasir.stock'
 import { Route as AdminMenuIndexRouteImport } from './routes/admin.menu.index'
 import { Route as AdminMenuAddRouteImport } from './routes/admin.menu.add'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.index'
-import { Route as AdminOrdersSuccessRouteImport } from './routes/admin.orders.success'
 import { Route as AdminReportsIndexRouteImport } from './routes/admin.reports.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AdminMenuProductIdEditRouteImport } from './routes/admin.menu.$productId.edit'
@@ -50,6 +56,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMenuRoute = AdminMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
@@ -65,6 +76,36 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStockRoute = AdminStockRouteImport.update({
+  id: '/stock',
+  path: '/stock',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const KasirIndexRoute = KasirIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => KasirRoute,
+} as any)
+const KasirOrdersRoute = KasirOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => KasirRoute,
+} as any)
+const KasirPosRoute = KasirPosRouteImport.update({
+  id: '/pos',
+  path: '/pos',
+  getParentRoute: () => KasirRoute,
+} as any)
+const KasirStockRoute = KasirStockRouteImport.update({
+  id: '/stock',
+  path: '/stock',
+  getParentRoute: () => KasirRoute,
+} as any)
 const AdminMenuIndexRoute = AdminMenuIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -78,11 +119,6 @@ const AdminMenuAddRoute = AdminMenuAddRouteImport.update({
 const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminOrdersRoute,
-} as any)
-const AdminOrdersSuccessRoute = AdminOrdersSuccessRouteImport.update({
-  id: '/success',
-  path: '/success',
   getParentRoute: () => AdminOrdersRoute,
 } as any)
 const AdminReportsIndexRoute = AdminReportsIndexRouteImport.update({
@@ -104,14 +140,20 @@ const AdminMenuProductIdEditRoute = AdminMenuProductIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/kasir': typeof KasirRoute
+  '/kasir': typeof KasirRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/reports': typeof AdminReportsRouteWithChildren
+  '/admin/stock': typeof AdminStockRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/kasir/orders': typeof KasirOrdersRoute
+  '/kasir/pos': typeof KasirPosRoute
+  '/kasir/stock': typeof KasirStockRoute
   '/admin/': typeof AdminIndexRoute
+  '/kasir/': typeof KasirIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
-  '/admin/orders/success': typeof AdminOrdersSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu/': typeof AdminMenuIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -120,11 +162,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/kasir': typeof KasirRoute
   '/login': typeof LoginRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/stock': typeof AdminStockRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/kasir/orders': typeof KasirOrdersRoute
+  '/kasir/pos': typeof KasirPosRoute
+  '/kasir/stock': typeof KasirStockRoute
   '/admin': typeof AdminIndexRoute
+  '/kasir': typeof KasirIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
-  '/admin/orders/success': typeof AdminOrdersSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu': typeof AdminMenuIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
@@ -135,14 +182,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/kasir': typeof KasirRoute
+  '/kasir': typeof KasirRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/reports': typeof AdminReportsRouteWithChildren
+  '/admin/stock': typeof AdminStockRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/kasir/orders': typeof KasirOrdersRoute
+  '/kasir/pos': typeof KasirPosRoute
+  '/kasir/stock': typeof KasirStockRoute
   '/admin/': typeof AdminIndexRoute
+  '/kasir/': typeof KasirIndexRoute
   '/admin/menu/add': typeof AdminMenuAddRoute
-  '/admin/orders/success': typeof AdminOrdersSuccessRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/menu/': typeof AdminMenuIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -156,12 +209,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kasir'
     | '/login'
+    | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/reports'
+    | '/admin/stock'
+    | '/admin/users'
+    | '/kasir/orders'
+    | '/kasir/pos'
+    | '/kasir/stock'
     | '/admin/'
+    | '/kasir/'
     | '/admin/menu/add'
-    | '/admin/orders/success'
     | '/api/auth/$'
     | '/admin/menu/'
     | '/admin/orders/'
@@ -170,11 +229,16 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/kasir'
     | '/login'
+    | '/admin/categories'
+    | '/admin/stock'
+    | '/admin/users'
+    | '/kasir/orders'
+    | '/kasir/pos'
+    | '/kasir/stock'
     | '/admin'
+    | '/kasir'
     | '/admin/menu/add'
-    | '/admin/orders/success'
     | '/api/auth/$'
     | '/admin/menu'
     | '/admin/orders'
@@ -186,12 +250,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kasir'
     | '/login'
+    | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
     | '/admin/reports'
+    | '/admin/stock'
+    | '/admin/users'
+    | '/kasir/orders'
+    | '/kasir/pos'
+    | '/kasir/stock'
     | '/admin/'
+    | '/kasir/'
     | '/admin/menu/add'
-    | '/admin/orders/success'
     | '/api/auth/$'
     | '/admin/menu/'
     | '/admin/orders/'
@@ -202,7 +272,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  KasirRoute: typeof KasirRoute
+  KasirRoute: typeof KasirRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -244,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/menu': {
       id: '/admin/menu'
       path: '/menu'
@@ -265,6 +342,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/stock': {
+      id: '/admin/stock'
+      path: '/stock'
+      fullPath: '/admin/stock'
+      preLoaderRoute: typeof AdminStockRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/kasir/': {
+      id: '/kasir/'
+      path: '/'
+      fullPath: '/kasir/'
+      preLoaderRoute: typeof KasirIndexRouteImport
+      parentRoute: typeof KasirRoute
+    }
+    '/kasir/orders': {
+      id: '/kasir/orders'
+      path: '/orders'
+      fullPath: '/kasir/orders'
+      preLoaderRoute: typeof KasirOrdersRouteImport
+      parentRoute: typeof KasirRoute
+    }
+    '/kasir/pos': {
+      id: '/kasir/pos'
+      path: '/pos'
+      fullPath: '/kasir/pos'
+      preLoaderRoute: typeof KasirPosRouteImport
+      parentRoute: typeof KasirRoute
+    }
+    '/kasir/stock': {
+      id: '/kasir/stock'
+      path: '/stock'
+      fullPath: '/kasir/stock'
+      preLoaderRoute: typeof KasirStockRouteImport
+      parentRoute: typeof KasirRoute
+    }
     '/admin/menu/': {
       id: '/admin/menu/'
       path: '/'
@@ -284,13 +403,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/orders/'
       preLoaderRoute: typeof AdminOrdersIndexRouteImport
-      parentRoute: typeof AdminOrdersRoute
-    }
-    '/admin/orders/success': {
-      id: '/admin/orders/success'
-      path: '/success'
-      fullPath: '/admin/orders/success'
-      preLoaderRoute: typeof AdminOrdersSuccessRouteImport
       parentRoute: typeof AdminOrdersRoute
     }
     '/admin/reports/': {
@@ -334,12 +446,10 @@ const AdminMenuRouteWithChildren = AdminMenuRoute._addFileChildren(
 )
 
 interface AdminOrdersRouteChildren {
-  AdminOrdersSuccessRoute: typeof AdminOrdersSuccessRoute
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
 }
 
 const AdminOrdersRouteChildren: AdminOrdersRouteChildren = {
-  AdminOrdersSuccessRoute: AdminOrdersSuccessRoute,
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
 }
 
@@ -360,25 +470,47 @@ const AdminReportsRouteWithChildren = AdminReportsRoute._addFileChildren(
 )
 
 interface AdminRouteChildren {
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminMenuRoute: typeof AdminMenuRouteWithChildren
   AdminOrdersRoute: typeof AdminOrdersRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRouteWithChildren
+  AdminStockRoute: typeof AdminStockRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCategoriesRoute: AdminCategoriesRoute,
   AdminMenuRoute: AdminMenuRouteWithChildren,
   AdminOrdersRoute: AdminOrdersRouteWithChildren,
   AdminReportsRoute: AdminReportsRouteWithChildren,
+  AdminStockRoute: AdminStockRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface KasirRouteChildren {
+  KasirOrdersRoute: typeof KasirOrdersRoute
+  KasirPosRoute: typeof KasirPosRoute
+  KasirStockRoute: typeof KasirStockRoute
+  KasirIndexRoute: typeof KasirIndexRoute
+}
+
+const KasirRouteChildren: KasirRouteChildren = {
+  KasirOrdersRoute: KasirOrdersRoute,
+  KasirPosRoute: KasirPosRoute,
+  KasirStockRoute: KasirStockRoute,
+  KasirIndexRoute: KasirIndexRoute,
+}
+
+const KasirRouteWithChildren = KasirRoute._addFileChildren(KasirRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  KasirRoute: KasirRoute,
+  KasirRoute: KasirRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
