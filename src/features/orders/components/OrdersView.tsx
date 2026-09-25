@@ -10,13 +10,9 @@ import {
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
-import type { AdminOrderDetail, AdminOrderRow } from "@/server/order-functions";
-import {
-	getOrderDetail,
-	listOrders,
-	setOrderStatus,
-} from "@/server/order-functions";
-import { recordPayment } from "@/server/payment-functions";
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
+import { useRecordPayment, useSetOrderStatus } from "../mutations";
+import { useOrderDetail, useOrdersList } from "../queries";
 import { InvoiceModal } from "./InvoiceModal";
 
 type OrdersSearch = {
@@ -43,16 +39,37 @@ export function OrdersView() {
 	const setAmount = useOrdersStore((state) => state.setAmount);
 	const setInvoiceOpen = useOrdersStore((state) => state.setInvoiceOpen);
 
-	const [orders, setOrders] = useState<AdminOrderRow[]>([]);
-	const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
 	const [productDraft, setProductDraft] = useState(product);
-	const [loading, setLoading] = useState(true);
-	const [refreshing, setRefreshing] = useState(false);
-	const [detailLoading, setDetailLoading] = useState(false);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const listRef = useRef<HTMLDivElement>(null);
-	const firstLoad = useRef(true);
+
+	const listQuery = useOrdersList({ start, end, status, product });
+	const orders = listQuery.data ?? [];
+	const loading = listQuery.isPending;
+	const refreshing = listQuery.isFetching && !listQuery.isPending;
+
+	const detailQuery = useOrderDetail(selectedId);
+	const detail = detailQuery.data ?? null;
+	const detailLoading = Boolean(selectedId) && detailQuery.isPending;
+
+	const recordPaymentMutation = useRecordPayment();
+	const setStatusMutation = useSetOrderStatus();
+	const busy = recordPaymentMutation.isPending || setStatusMutation.isPending;
+
+	const error = listQuery.isError
+		? queryErrorMessage(listQuery.error, "Gagal memuat pesanan.")
+		: detailQuery.isError
+			? queryErrorMessage(detailQuery.error, "Gagal memuat detail.")
+			: recordPaymentMutation.isError
+				? mutationErrorMessage(
+						recordPaymentMutation.error,
+						"Aksi tidak berhasil.",
+					)
+				: setStatusMutation.isError
+					? mutationErrorMessage(
+							setStatusMutation.error,
+							"Aksi tidak berhasil.",
+						)
+					: null;
 
 	const patchSearch = useCallback(
 		(patch: Partial<OrdersSearch>) => {
@@ -95,119 +112,21 @@ export function OrdersView() {
 	}, [productDraft, product, patchSearch]);
 
 	useEffect(() => {
-		let active = true;
-		if (firstLoad.current) setLoading(true);
-		else setRefreshing(true);
-		listOrders({
-			data: {
-				start: start || undefined,
-				end: end || undefined,
-				status: status || undefined,
-				product: product || undefined,
-			},
-		})
-			.then((rows) => {
-				if (!active) return;
-				const top = listRef.current?.scrollTop ?? 0;
-				setOrders(rows);
-				requestAnimationFrame(() => {
-					if (listRef.current) listRef.current.scrollTop = top;
-				});
-			})
-			.catch((cause: unknown) => {
-				if (active)
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat pesanan.",
-					);
-			})
-			.finally(() => {
-				if (active) {
-					firstLoad.current = false;
-					setLoading(false);
-					setRefreshing(false);
-				}
-			});
-		return () => {
-			active = false;
-		};
-	}, [start, end, status, product]);
-
-	useEffect(() => {
-		if (!selectedId) {
-			setDetail(null);
-			return;
-		}
+		if (!selectedId) return;
 		if (!orders.length) return;
 		if (!orders.some((row) => row.id === selectedId)) {
 			patchSearch({ orderId: undefined });
-			setDetail(null);
-			return;
 		}
-		let active = true;
-		setDetailLoading(true);
-		getOrderDetail({ data: { id: selectedId } })
-			.then((row) => {
-				if (!active) return;
-				setDetail(row);
-				setPaymentDraft({
-					method: row.paymentMethod ?? "tunai",
-					amount: row.paymentAmount ?? "",
-				});
-			})
-			.catch((cause: unknown) => {
-				if (active)
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat detail.",
-					);
-			})
-			.finally(() => {
-				if (active) setDetailLoading(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, [selectedId, orders, patchSearch, setPaymentDraft]);
+	}, [selectedId, orders, patchSearch]);
 
-	async function refreshOrders() {
-		const rows = await listOrders({
-			data: {
-				start: start || undefined,
-				end: end || undefined,
-				status: status || undefined,
-				product: product || undefined,
-			},
-		});
-		const top = listRef.current?.scrollTop ?? 0;
-		setOrders(rows);
-		requestAnimationFrame(() => {
-			if (listRef.current) listRef.current.scrollTop = top;
-		});
-	}
-
-	async function refreshDetail(id = selectedId) {
-		if (!id) return;
-		const row = await getOrderDetail({ data: { id } });
-		setDetail(row);
+	// Draft pembayaran mengikuti detail yang sedang dibuka.
+	useEffect(() => {
+		if (!detail) return;
 		setPaymentDraft({
-			method: row.paymentMethod ?? "tunai",
-			amount: row.paymentAmount ?? "",
+			method: detail.paymentMethod ?? "tunai",
+			amount: detail.paymentAmount ?? "",
 		});
-	}
-
-	async function runAction(action: () => Promise<unknown>) {
-		if (busy) return;
-		setBusy(true);
-		setError(null);
-		try {
-			await action();
-			await refreshOrders();
-			await refreshDetail();
-		} catch (cause) {
-			setError(cause instanceof Error ? cause.message : "Aksi tidak berhasil.");
-		} finally {
-			setBusy(false);
-		}
-	}
+	}, [detail, setPaymentDraft]);
 
 	return (
 		<main className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col px-4 py-6 sm:px-8">
@@ -439,11 +358,12 @@ export function OrdersView() {
 									<form
 										onSubmit={(event) => {
 											event.preventDefault();
-											void runAction(() =>
-												recordPayment({
-													data: { orderId: Number(detail.id), method, amount },
-												}),
-											);
+											if (busy) return;
+											recordPaymentMutation.mutate({
+												orderId: Number(detail.id),
+												method,
+												amount,
+											});
 										}}
 										className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[160px_1fr_auto]"
 									>
@@ -498,11 +418,10 @@ export function OrdersView() {
 											type="button"
 											disabled={busy}
 											onClick={() =>
-												void runAction(() =>
-													setOrderStatus({
-														data: { id: Number(detail.id), status: "selesai" },
-													}),
-												)
+												setStatusMutation.mutate({
+													id: Number(detail.id),
+													status: "selesai",
+												})
 											}
 											className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
 										>
@@ -514,14 +433,10 @@ export function OrdersView() {
 											type="button"
 											disabled={busy}
 											onClick={() =>
-												void runAction(() =>
-													setOrderStatus({
-														data: {
-															id: Number(detail.id),
-															status: "dibatalkan",
-														},
-													}),
-												)
+												setStatusMutation.mutate({
+													id: Number(detail.id),
+													status: "dibatalkan",
+												})
 											}
 											className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 disabled:opacity-50"
 										>

@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePosStore } from "@/features/kasir/lib/pos-store";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
@@ -8,10 +8,9 @@ import {
 	sumMoneyLines,
 	toMinorUnits,
 } from "@/features/shared/lib/money";
-import { createOrder } from "@/server/order-functions";
-import { listCashierCatalog } from "@/server/product-functions";
-
-type CatalogProduct = Awaited<ReturnType<typeof listCashierCatalog>>[number];
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
+import { useCreateOrder } from "../mutations";
+import { type CashierCatalogProduct, useCashierCatalog } from "../queries";
 
 export function PosView() {
 	const navigate = useNavigate();
@@ -24,30 +23,19 @@ export function PosView() {
 	const setQuantity = usePosStore((state) => state.setQuantity);
 	const setCreatedId = usePosStore((state) => state.setCreatedId);
 	const clearCart = usePosStore((state) => state.clearCart);
-	const [products, setProducts] = useState<CatalogProduct[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		let active = true;
-		listCashierCatalog()
-			.then((rows) => {
-				if (active) setProducts(rows);
-			})
-			.catch((cause: unknown) => {
-				if (active)
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat menu.",
-					);
-			})
-			.finally(() => {
-				if (active) setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, []);
+	const catalogQuery = useCashierCatalog();
+	const createOrderMutation = useCreateOrder();
+	const products: CashierCatalogProduct[] = catalogQuery.data ?? [];
+	const loading = catalogQuery.isPending;
+	const busy = createOrderMutation.isPending;
+	const error = catalogQuery.isError
+		? queryErrorMessage(catalogQuery.error, "Gagal memuat menu.")
+		: createOrderMutation.isError
+			? mutationErrorMessage(
+					createOrderMutation.error,
+					"Pesanan tidak dapat dibuat. Muat ulang menu dan coba lagi.",
+				)
+			: null;
 
 	const categories = [...new Set(products.map((product) => product.category))];
 	const visibleProducts = products.filter(
@@ -69,32 +57,22 @@ export function PosView() {
 		cartItems.map((item) => ({ price: item.price, quantity: item.quantity })),
 	);
 
-	async function submitOrder() {
+	function submitOrder() {
 		if (busy || cartItems.length === 0) return;
-		setBusy(true);
-		setError(null);
-		try {
-			const order = await createOrder({
-				data: {
-					items: cartItems.map((item) => ({
-						productId: item.id,
-						quantity: item.quantity,
-					})),
+		createOrderMutation.mutate(
+			{
+				items: cartItems.map((item) => ({
+					productId: item.id,
+					quantity: item.quantity,
+				})),
+			},
+			{
+				onSuccess: (order) => {
+					setCreatedId(order.id);
+					clearCart();
 				},
-			});
-			setCreatedId(order.id);
-			clearCart();
-			const updated = await listCashierCatalog();
-			setProducts(updated);
-		} catch (cause) {
-			setError(
-				cause instanceof Error
-					? cause.message
-					: "Pesanan tidak dapat dibuat. Muat ulang menu dan coba lagi.",
-			);
-		} finally {
-			setBusy(false);
-		}
+			},
+		);
 	}
 
 	return (
@@ -290,7 +268,7 @@ export function PosView() {
 				<button
 					type="button"
 					disabled={busy || cartItems.length === 0}
-					onClick={() => void submitOrder()}
+					onClick={submitOrder}
 					className="mt-4 w-full rounded-xl bg-[#F97316] py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{busy ? "Menyimpan pesanan…" : "Buat pesanan"}

@@ -8,29 +8,22 @@ import {
 	ShoppingBag,
 	Wallet,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtRp } from "@/features/shared/lib/format";
+import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import type { PeriodeKind } from "@/server/periode";
+import { useGenerateReport } from "../mutations";
 import {
-	generateLaporan,
-	getLaporanDetail,
-	getLaporanRentang,
-	listLaporan,
-} from "@/server/report-functions";
-import { exactMonthPeriode, exactWeekPeriode, toISODate } from "../lib/periode";
-import { PeriodePicker, type Rentang, rangeLabel } from "./PeriodePicker";
+	type ReportDetail,
+	type ReportSelection,
+	type SavedReportRow,
+	useReportDetail,
+	useReportList,
+} from "../queries";
+import { PeriodePicker, type Rentang } from "./PeriodePicker";
 
-type SavedRow = {
-	id: number;
-	periode: string;
-	totalPenjualan: string;
-	kind: PeriodeKind | null;
-};
-
-type Detail = Awaited<ReturnType<typeof getLaporanDetail>>;
-
-function toCsv(detail: Detail): string {
+function toCsv(detail: ReportDetail): string {
 	const head = "no_pesanan;tanggal;kasir;metode;total;jumlah_item";
 	const lines = detail.pesanan.map((o) =>
 		[
@@ -76,87 +69,41 @@ function metodeLabel(metode: string | null): string {
 
 export function ReportsView() {
 	const [range, setRange] = useState<Rentang>(todayRange);
-	const [rows, setRows] = useState<SavedRow[]>([]);
-	const [detail, setDetail] = useState<Detail | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [working, setWorking] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const [selection, setSelection] = useState<ReportSelection | null>(null);
 	const [notice, setNotice] = useState<string | null>(null);
 
-	const refresh = useCallback(async () => {
-		try {
-			setError(null);
-			const data = await listLaporan();
-			setRows(data);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Gagal memuat laporan");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const listQuery = useReportList();
+	const rows: SavedReportRow[] = listQuery.data ?? [];
+	const loading = listQuery.isPending;
+	const detailQuery = useReportDetail(selection);
+	const detail = detailQuery.data ?? null;
+	const generateMutation = useGenerateReport();
+	const working = generateMutation.isPending || detailQuery.isFetching === true;
 
-	useEffect(() => {
-		void refresh();
-	}, [refresh]);
+	const error = generateMutation.isError
+		? mutationErrorMessage(generateMutation.error, "Gagal generate laporan")
+		: listQuery.isError
+			? queryErrorMessage(listQuery.error, "Gagal memuat laporan")
+			: detailQuery.isError
+				? queryErrorMessage(detailQuery.error, "Gagal memuat detail")
+				: null;
 
-	async function openDetail(p: string) {
-		setWorking(true);
-		setError(null);
+	function openDetail(p: string) {
 		setNotice(null);
-		try {
-			const d = await getLaporanDetail({ data: { periode: p } });
-			setDetail(d);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Gagal memuat detail");
-		} finally {
-			setWorking(false);
-		}
+		setSelection({ kind: "periode", periode: p });
 	}
 
-	async function generate() {
-		const r = range;
-		const label = rangeLabel(r);
-		setWorking(true);
-		setError(null);
+	function generate() {
 		setNotice(null);
-		try {
-			const computed = await getLaporanRentang({
-				data: { start: toISODate(r.from), end: toISODate(r.to) },
-			});
-			// Rentang pas seminggu/sebulan penuh → simpan sebagai periode.
-			const exact = exactWeekPeriode(r) ?? exactMonthPeriode(r);
-			if (exact) {
-				const saved = await generateLaporan({ data: { periode: exact } });
-				if (saved.empty) {
-					setNotice(
-						`Tidak ada pesanan selesai+lunas pada ${label} — tersimpan Rp0 agar teraudit.`,
-					);
-				} else {
-					setNotice(null);
-				}
-				await refresh();
-				await openDetail(saved.periode);
-				return;
-			}
-			if (computed.pesanan.length === 0) {
-				setNotice(
-					`Tidak ada pesanan selesai+lunas pada ${label} — laporan tidak disimpan.`,
-				);
-			} else {
-				setNotice(
-					`Rentang kustom ${label} hanya dihitung — tidak disimpan ke daftar.`,
-				);
-			}
-			setDetail({
-				periode: label,
-				tersimpan: null,
-				pesanan: computed.pesanan,
-			});
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Gagal generate laporan");
-		} finally {
-			setWorking(false);
-		}
+		generateMutation.mutate(
+			{ range },
+			{
+				onSuccess: (result) => {
+					setNotice(result.notice);
+					setSelection(result.selection);
+				},
+			},
+		);
 	}
 
 	function downloadCsv() {
@@ -237,7 +184,7 @@ export function ReportsView() {
 							range={range}
 							onApply={(r) => {
 								setRange(r);
-								setDetail(null);
+								setSelection(null);
 								setNotice(null);
 							}}
 						/>

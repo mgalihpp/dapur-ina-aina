@@ -1,31 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { getCashierDashboard } from "@/server/dashboard-functions";
+import { queryErrorMessage } from "@/lib/query-errors";
+import { useCashierDashboard } from "../queries";
 
 export function KasirDashboardView() {
-	const [summary, setSummary] = useState<Awaited<
-		ReturnType<typeof getCashierDashboard>
-	> | null>(null);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		let active = true;
-		getCashierDashboard()
-			.then((result) => {
-				if (!active) return;
-				setSummary(result);
-			})
-			.catch((cause: unknown) => {
-				if (active)
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat dasbor.",
-					);
-			});
-		return () => {
-			active = false;
-		};
-	}, []);
+	const dashboardQuery = useCashierDashboard();
+	const summary = dashboardQuery.data ?? null;
+	const error = dashboardQuery.isError
+		? queryErrorMessage(dashboardQuery.error, "Gagal memuat dasbor.")
+		: null;
 
 	return (
 		<main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 sm:px-8">

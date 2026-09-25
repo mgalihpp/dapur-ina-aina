@@ -1,37 +1,20 @@
-import { useEffect, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { getStockOverview, listStockMoves } from "@/server/stock-functions";
-
-type StockRow = Awaited<ReturnType<typeof getStockOverview>>[number];
-type StockMove = Awaited<ReturnType<typeof listStockMoves>>[number];
+import { queryErrorMessage } from "@/lib/query-errors";
+import { useCashierStockMoves, useCashierStockOverview } from "../queries";
 
 export function KasirStockView() {
-	const [products, setProducts] = useState<StockRow[]>([]);
-	const [moves, setMoves] = useState<StockMove[]>([]);
-	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(true);
-	useEffect(() => {
-		let active = true;
-		Promise.all([getStockOverview(), listStockMoves({ data: {} })])
-			.then(([rows, history]) => {
-				if (active) {
-					setProducts(rows);
-					setMoves(history);
-				}
-			})
-			.catch((cause: unknown) => {
-				if (active)
-					setError(
-						cause instanceof Error ? cause.message : "Gagal memuat stok.",
-					);
-			})
-			.finally(() => {
-				if (active) setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, []);
+	const overviewQuery = useCashierStockOverview();
+	const movesQuery = useCashierStockMoves();
+	const products = overviewQuery.data ?? [];
+	const moves = movesQuery.data ?? [];
+	const loading = overviewQuery.isPending || movesQuery.isPending;
+	const error =
+		overviewQuery.isError || movesQuery.isError
+			? queryErrorMessage(
+					overviewQuery.error ?? movesQuery.error,
+					"Gagal memuat stok.",
+				)
+			: null;
 	return (
 		<main className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Stok</h1>
