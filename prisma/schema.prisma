@@ -124,7 +124,7 @@ model Pesanan {
   id         Int             @id @default(autoincrement())
   userId     String?
   user       User?           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  tanggal    DateTime        @db.Date
+  tanggal    DateTime
   total      Decimal         @default(0) @db.Decimal(10, 2)
   status     StatusPesanan   @default(diproses)
   mejaId     Int?

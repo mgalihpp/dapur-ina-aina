@@ -38,6 +38,20 @@ export function fmtDateTime(value: string | Date): string {
 	return formatted.replace(".", ":");
 }
 
+export function fmtTanggalJam(value: string | Date): string {
+	const date = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(date.getTime())) return String(value);
+	const formatted = new Intl.DateTimeFormat("id-ID", {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(date);
+	return formatted.replace(".", ":");
+}
+
 export function fmtOrderDay(value: string | Date, now = new Date()): string {
 	const date = value instanceof Date ? value : new Date(value);
 	if (Number.isNaN(date.getTime())) return String(value);

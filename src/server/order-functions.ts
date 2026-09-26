@@ -19,10 +19,10 @@ export type AdminOrderRow = {
 	kasir: string;
 	meja: { id: number; nama: string; lantai: string } | null;
 	tamu: number | null;
-	itemCount: number;
+	items: { name: string; qty: number }[];
 };
 
-export type AdminOrderDetail = AdminOrderRow & {
+export type AdminOrderDetail = Omit<AdminOrderRow, "items"> & {
 	paymentMethod: "tunai" | "non_tunai" | null;
 	paymentAmount: string | null;
 	paymentDate: string | null;
@@ -41,7 +41,10 @@ type OrderRowSource = Prisma.PesananGetPayload<{
 		user: { select: { name: true } };
 		pembayaran: { select: { status: true } };
 		meja: { select: { id: true; nama: true; lantai: true } };
-		_count: { select: { detail: true } };
+		detail: {
+			include: { produk: { select: { namaProduk: true } } };
+			orderBy: { id: "asc" };
+		};
 	};
 }>;
 
@@ -57,7 +60,10 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 			? { id: order.meja.id, nama: order.meja.nama, lantai: order.meja.lantai }
 			: null,
 		tamu: order.tamu,
-		itemCount: order._count.detail,
+		items: order.detail.map((item) => ({
+			name: item.produk.namaProduk,
+			qty: item.jumlah,
+		})),
 	};
 }
 
@@ -93,7 +99,10 @@ export const listOrders = createServerFn({ method: "GET" })
 				user: { select: { name: true } },
 				pembayaran: { select: { status: true } },
 				meja: { select: { id: true, nama: true, lantai: true } },
-				_count: { select: { detail: true } },
+				detail: {
+					include: { produk: { select: { namaProduk: true } } },
+					orderBy: { id: "asc" },
+				},
 			},
 			orderBy: [{ status: "asc" }, { id: "desc" }],
 			take: 200,
