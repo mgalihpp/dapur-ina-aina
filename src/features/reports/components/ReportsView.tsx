@@ -78,7 +78,7 @@ export function ReportsView() {
 	const loading = listQuery.isPending;
 	const detailQuery = useReportDetail(selection);
 	const detail = detailQuery.data ?? null;
-	const detailLoading = detailQuery.isPending;
+	const detailLoading = selection !== null && detailQuery.isPending;
 	const generateMutation = useGenerateReport();
 	const working = generateMutation.isPending || detailQuery.isFetching === true;
 
