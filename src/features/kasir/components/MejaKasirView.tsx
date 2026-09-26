@@ -97,7 +97,9 @@ export function MejaKasirView() {
 											<button
 												type="button"
 												disabled={busy}
-												onClick={() => changeStatus(row.orderId ?? 0, "selesai")}
+												onClick={() =>
+													changeStatus(row.orderId ?? 0, "selesai")
+												}
 												className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
 											>
 												Selesaikan
