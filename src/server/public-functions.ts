@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
+import { assertMejaFree, occupancyInclude, toOccupancy } from "./meja-occupancy";
 import { sumOrderTotal } from "./order-domain";
 import { parsePublicOrderInput } from "./validators";
 
@@ -8,6 +9,8 @@ export type PublicMeja = {
 	id: number;
 	nama: string;
 	lantai: string;
+	terisi: boolean;
+	orderId: number | null;
 };
 
 export type PublicCatalogProduct = {
@@ -62,9 +65,9 @@ export const listPublicMeja = createServerFn({ method: "GET" }).handler(
 	async (): Promise<PublicMeja[]> => {
 		const rows = await prisma.meja.findMany({
 			orderBy: [{ lantai: "asc" }, { nama: "asc" }],
-			select: { id: true, nama: true, lantai: true },
+			select: { id: true, nama: true, lantai: true, pesanan: occupancyInclude.pesanan },
 		});
-		return rows;
+		return rows.map(toOccupancy);
 	},
 );
 
@@ -122,13 +125,14 @@ export const createPublicOrder = createServerFn({ method: "POST" })
 				),
 			);
 			const tanggal = new Date();
+			if (data.mejaId !== null) await assertMejaFree(tx, data.mejaId);
 			const order = await tx.pesanan.create({
 				data: {
 					userId: null,
 					tanggal,
 					total,
 					status: "diproses",
-					meja: data.meja,
+					mejaId: data.mejaId,
 					tamu: data.tamu,
 					detail: {
 						create: orderItems.map((item) => ({
@@ -174,6 +178,7 @@ export const getPublicOrderDetail = createServerFn({ method: "GET" })
 		const order = await prisma.pesanan.findUnique({
 			where: { id: data.id },
 			include: {
+				meja: { select: { nama: true } },
 				pembayaran: true,
 				detail: { include: { produk: { select: { namaProduk: true } } } },
 			},
@@ -184,7 +189,7 @@ export const getPublicOrderDetail = createServerFn({ method: "GET" })
 			tanggal: order.tanggal.toISOString(),
 			status: order.status,
 			total: order.total.toFixed(2),
-			meja: order.meja,
+			meja: order.meja?.nama ?? null,
 			tamu: order.tamu,
 			paymentStatus: order.pembayaran?.status ?? null,
 			paymentMethod: order.pembayaran?.metode ?? null,

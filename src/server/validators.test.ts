@@ -30,12 +30,12 @@ describe("public order boundary validation", () => {
 		expect(
 			parsePublicOrderInput({
 				items: [{ productId: 1, quantity: 1 }],
-				meja: "Meja 01",
+				mejaId: 3,
 				tamu: 2,
 				paymentMethod: "non_tunai",
 			}),
 		).toMatchObject({
-			meja: "Meja 01",
+			mejaId: 3,
 			tamu: 2,
 			paymentMethod: "non_tunai",
 		});

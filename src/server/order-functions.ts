@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
 import { ensureStaff } from "./guards";
+import { assertMejaFree } from "./meja-occupancy";
 import { assertOrderTransition, sumOrderTotal } from "./order-domain";
 import {
 	parseOrderFilterInput,
@@ -16,6 +17,8 @@ export type AdminOrderRow = {
 	status: "diproses" | "selesai" | "dibatalkan";
 	tanggal: string;
 	kasir: string;
+	meja: { id: number; nama: string; lantai: string } | null;
+	tamu: number | null;
 };
 
 export type AdminOrderDetail = AdminOrderRow & {
@@ -36,6 +39,7 @@ type OrderRowSource = Prisma.PesananGetPayload<{
 	include: {
 		user: { select: { name: true } };
 		pembayaran: { select: { status: true } };
+		meja: { select: { id: true; nama: true; lantai: true } };
 	};
 }>;
 
@@ -47,6 +51,8 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 		status: order.status,
 		tanggal: order.tanggal.toISOString(),
 		kasir: order.user?.name ?? "-",
+		meja: order.meja ? { id: order.meja.id, nama: order.meja.nama, lantai: order.meja.lantai } : null,
+		tamu: order.tamu,
 	};
 }
 
@@ -81,6 +87,7 @@ export const listOrders = createServerFn({ method: "GET" })
 			include: {
 				user: { select: { name: true } },
 				pembayaran: { select: { status: true } },
+				meja: { select: { id: true, nama: true, lantai: true } },
 			},
 			orderBy: [{ status: "asc" }, { id: "desc" }],
 			take: 200,
@@ -101,6 +108,7 @@ export const getOrderDetail = createServerFn({ method: "GET" })
 			include: {
 				user: { select: { name: true } },
 				pembayaran: true,
+				meja: { select: { id: true, nama: true, lantai: true } },
 				detail: { include: { produk: { select: { namaProduk: true } } } },
 			},
 		});
@@ -179,12 +187,14 @@ export const createOrder = createServerFn({ method: "POST" })
 					})),
 				),
 			);
-			const order = await tx.pesanan.create({
+			if (data.mejaId !== null) await assertMejaFree(tx, data.mejaId);
+		const order = await tx.pesanan.create({
 				data: {
 					userId: session.user.id,
 					tanggal: new Date(),
 					total,
 					status: "diproses",
+					mejaId: data.mejaId,
 					detail: {
 						create: orderItems.map((item) => ({
 							produkId: item.productId,

@@ -24,10 +24,12 @@ export function parseIdInput(input: IdInput): { id: number } {
 
 export type OrderInput = {
 	items: { productId: string | number; quantity: number }[];
+	mejaId?: string | number | null;
 };
 
 export function parseOrderInput(input: OrderInput): {
 	items: { productId: number; quantity: number }[];
+	mejaId: number | null;
 } {
 	if (
 		typeof input !== "object" ||
@@ -60,7 +62,15 @@ export function parseOrderInput(input: OrderInput): {
 	});
 	if (new Set(items.map((item) => item.productId)).size !== items.length)
 		throw new Error("Produk yang sama tidak boleh diulang.");
-	return { items };
+	return { items, mejaId: parseOptionalMejaId(input.mejaId) };
+}
+
+function parseOptionalMejaId(value: string | number | null | undefined) {
+	if (value === undefined || value === null) return null;
+	const mejaId = Number(value);
+	if (!Number.isInteger(mejaId) || mejaId <= 0)
+		throw new Error("Meja tidak valid.");
+	return mejaId;
 }
 
 export type PaymentInput = {
@@ -376,31 +386,19 @@ export function parseUpdateMejaInput(input: UpdateMejaInput) {
 export type GuestPaymentMethod = "tunai" | "non_tunai";
 
 export type PublicOrderInput = OrderInput & {
-	meja?: string | null;
 	tamu?: number | null;
 	paymentMethod?: string;
 };
 
 export function parsePublicOrderInput(input: PublicOrderInput): {
 	items: { productId: number; quantity: number }[];
-	meja: string | null;
+	mejaId: number | null;
 	tamu: number | null;
 	paymentMethod: GuestPaymentMethod;
 } {
-	const { items } = parseOrderInput(input);
+	const { items, mejaId } = parseOrderInput(input);
 	if (typeof input !== "object" || input === null || !("items" in input))
 		throw new Error("Input pesanan tidak valid.");
-	const raw = input.meja;
-	let meja: string | null = null;
-	if (raw !== undefined && raw !== null) {
-		if (typeof raw !== "string") throw new Error("Nama meja tidak valid.");
-		const trimmed = raw.trim();
-		if (trimmed) {
-			if (trimmed.length > 20)
-				throw new Error("Nama meja maksimal 20 karakter.");
-			meja = trimmed;
-		}
-	}
 	const rawTamu = input.tamu;
 	let tamu: number | null = null;
 	if (rawTamu !== undefined && rawTamu !== null) {
@@ -412,7 +410,7 @@ export function parsePublicOrderInput(input: PublicOrderInput): {
 	const paymentMethod = input.paymentMethod ?? "tunai";
 	if (paymentMethod !== "tunai" && paymentMethod !== "non_tunai")
 		throw new Error("Metode pembayaran tidak valid.");
-	return { items, meja, tamu, paymentMethod };
+	return { items, mejaId, tamu, paymentMethod };
 }
 
 export type DashboardPeriodInput = {

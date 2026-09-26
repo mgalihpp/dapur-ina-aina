@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
-import { ensureAdmin } from "./guards";
+import { ensureAdmin, ensureStaff } from "./guards";
+import { occupancyInclude, toOccupancy } from "./meja-occupancy";
 import {
 	parseIdInput,
 	parseMejaInput,
@@ -21,6 +22,22 @@ export const listMeja = createServerFn({ method: "GET" }).handler(async () => {
 		orderBy: [{ lantai: "asc" }, { nama: "asc" }],
 	});
 });
+
+export const listMejaOccupancy = createServerFn({ method: "GET" }).handler(
+	async () => {
+		await ensureStaff();
+		const rows = await prisma.meja.findMany({
+			orderBy: [{ lantai: "asc" }, { nama: "asc" }],
+			select: {
+				id: true,
+				nama: true,
+				lantai: true,
+				pesanan: occupancyInclude.pesanan,
+			},
+		});
+		return rows.map(toOccupancy);
+	},
+);
 
 export const createMeja = createServerFn({ method: "POST" })
 	.validator(parseMejaInput)
