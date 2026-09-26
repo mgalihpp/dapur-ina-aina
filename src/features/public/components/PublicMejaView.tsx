@@ -80,6 +80,7 @@ export function PublicMejaView() {
 	}
 
 	function adjustGuest(row: PublicMeja, delta: number) {
+		if (row.terisi) return;
 		const current = isSameTable(table, row)
 			? (table?.tamu ?? DEFAULT_GUEST_COUNT)
 			: DEFAULT_GUEST_COUNT;
@@ -190,8 +191,9 @@ export function PublicMejaView() {
 									<button
 										type="button"
 										aria-label={`Kurangi tamu ${meja.nama}`}
+										disabled={meja.terisi}
 										onClick={() => adjustGuest(meja, -1)}
-										className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold"
+										className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
 									>
 										−
 									</button>
@@ -201,8 +203,9 @@ export function PublicMejaView() {
 									<button
 										type="button"
 										aria-label={`Tambah tamu ${meja.nama}`}
+										disabled={meja.terisi}
 										onClick={() => adjustGuest(meja, 1)}
-										className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold"
+										className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
 									>
 										+
 									</button>
