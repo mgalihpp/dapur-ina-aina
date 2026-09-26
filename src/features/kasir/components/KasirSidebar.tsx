@@ -1,11 +1,5 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import {
-	Armchair,
-	Boxes,
-	ClipboardList,
-	LayoutGrid,
-	ShoppingCart,
-} from "lucide-react";
+import { Boxes, ClipboardList, LayoutGrid, ShoppingCart } from "lucide-react";
 import { useSignOutMutation } from "@/features/auth/mutations";
 import { usePosStore } from "@/features/kasir/lib/pos-store";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
@@ -13,6 +7,7 @@ import {
 	AppSidebar,
 	type SidebarItem,
 } from "@/features/shared/components/AppSidebar";
+import { TableIcon } from "@/features/shared/components/table-icon";
 
 export function KasirSidebar() {
 	const navigate = useNavigate();
@@ -38,7 +33,7 @@ export function KasirSidebar() {
 			to: "/kasir/orders",
 		},
 		{
-			icon: Armchair,
+			icon: TableIcon,
 			label: "Meja",
 			active: pathname === "/kasir/meja",
 			to: "/kasir/meja",
