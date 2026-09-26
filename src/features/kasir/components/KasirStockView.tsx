@@ -88,7 +88,7 @@ export function KasirStockView() {
 	];
 
 	return (
-		<main className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-8">
+		<main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
 			<div>
 				<h1 className="text-2xl font-bold tracking-tight">Stok</h1>
 				<p className="mt-1 text-sm text-muted-foreground">
