@@ -103,9 +103,6 @@ export function MejaKasirView() {
 									row.terisi ? "border-red-200" : "border-neutral-100"
 								}`}
 							>
-								<span className="text-xs text-muted-foreground">
-									{row.lantai}
-								</span>
 								<span
 									aria-hidden
 									className={`mt-2 flex size-16 items-center justify-center rounded-full border-2 text-xl font-bold ${
