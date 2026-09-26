@@ -86,9 +86,9 @@ function OrderCard({
 				<span className="mt-1 block truncate text-xs text-neutral-500">
 					{mejaLine}
 				</span>
-				{visibleItems.map((item) => (
+				{visibleItems.map((item, index) => (
 					<span
-						key={`${item.name}×${item.qty}`}
+						key={`${item.name}×${item.qty}#${index}`}
 						className="mt-0.5 block truncate text-xs text-neutral-700"
 					>
 						×{item.qty} {item.name}
