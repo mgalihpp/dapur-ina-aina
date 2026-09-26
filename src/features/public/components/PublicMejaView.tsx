@@ -187,29 +187,29 @@ export function PublicMejaView() {
 										Pesanan #{meja.orderId}
 									</p>
 								) : null}
-								<div className="mt-2 flex items-center gap-3">
-									<button
-										type="button"
-										aria-label={`Kurangi tamu ${meja.nama}`}
-										disabled={meja.terisi}
-										onClick={() => adjustGuest(meja, -1)}
-										className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
-									>
-										−
-									</button>
-									<span className="min-w-5 text-center text-sm font-semibold">
-										{selected ? table?.tamu : DEFAULT_GUEST_COUNT}
-									</span>
-									<button
-										type="button"
-										aria-label={`Tambah tamu ${meja.nama}`}
-										disabled={meja.terisi}
-										onClick={() => adjustGuest(meja, 1)}
-										className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
-									>
-										+
-									</button>
-								</div>
+								{meja.terisi ? null : (
+									<div className="mt-2 flex items-center gap-3">
+										<button
+											type="button"
+											aria-label={`Kurangi tamu ${meja.nama}`}
+											onClick={() => adjustGuest(meja, -1)}
+											className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold"
+										>
+											−
+										</button>
+										<span className="min-w-5 text-center text-sm font-semibold">
+											{selected ? table?.tamu : DEFAULT_GUEST_COUNT}
+										</span>
+										<button
+											type="button"
+											aria-label={`Tambah tamu ${meja.nama}`}
+											onClick={() => adjustGuest(meja, 1)}
+											className="h-7 w-7 rounded-full border border-neutral-300 bg-white text-sm font-bold"
+										>
+											+
+										</button>
+									</div>
+								)}
 							</div>
 						);
 					})}
