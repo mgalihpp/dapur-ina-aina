@@ -36,6 +36,7 @@ export function useSetOrderStatus() {
 				...invalidation.stock,
 				...invalidation.dashboard,
 				qk.reports.root,
+				qk.tables.root,
 			]),
 	});
 }

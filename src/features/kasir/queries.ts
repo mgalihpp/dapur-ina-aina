@@ -2,11 +2,13 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { dataQueryFn, passthroughQueryFn } from "@/lib/query-helpers";
 import { qk } from "@/lib/query-keys";
 import { getCashierDashboard } from "@/server/dashboard-functions";
+import { listMejaOccupancy } from "@/server/meja-functions";
 import { listCashierCatalog } from "@/server/product-functions";
 import { getStockOverview, listStockMoves } from "@/server/stock-functions";
 
 const fetchCashierCatalog = passthroughQueryFn(listCashierCatalog);
 const fetchCashierDashboard = passthroughQueryFn(getCashierDashboard);
+const fetchMejaOccupancy = passthroughQueryFn(listMejaOccupancy);
 const fetchStockOverview = passthroughQueryFn(getStockOverview);
 const fetchStockMoves = dataQueryFn(listStockMoves);
 
@@ -49,3 +51,9 @@ export const cashierStockMovesOptions = queryOptions({
 export function useCashierStockMoves() {
 	return useQuery(cashierStockMovesOptions);
 }
+
+export const kasirMejaOccupancyOptions = queryOptions({
+	queryKey: qk.tables.publicList,
+	queryFn: () => fetchMejaOccupancy(),
+	refetchInterval: 10_000,
+});

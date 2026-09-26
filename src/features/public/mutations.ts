@@ -14,6 +14,7 @@ export function useCreatePublicOrderMutation() {
 				queryClient.invalidateQueries({ queryKey: invalidation.stock }),
 				queryClient.invalidateQueries({ queryKey: invalidation.orders }),
 				queryClient.invalidateQueries({ queryKey: invalidation.dashboard }),
+				queryClient.invalidateQueries({ queryKey: qk.tables.root }),
 			]);
 		},
 	});

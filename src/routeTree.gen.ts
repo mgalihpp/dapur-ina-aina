@@ -26,6 +26,7 @@ import { Route as AdminStockRouteImport } from './routes/admin.stock'
 import { Route as AdminTablesRouteImport } from './routes/admin.tables'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as KasirIndexRouteImport } from './routes/kasir.index'
+import { Route as KasirMejaRouteImport } from './routes/kasir.meja'
 import { Route as KasirOrdersRouteImport } from './routes/kasir.orders'
 import { Route as KasirPosRouteImport } from './routes/kasir.pos'
 import { Route as KasirStockRouteImport } from './routes/kasir.stock'
@@ -123,6 +124,11 @@ const KasirIndexRoute = KasirIndexRouteImport.update({
   path: '/',
   getParentRoute: () => KasirRoute,
 } as any)
+const KasirMejaRoute = KasirMejaRouteImport.update({
+  id: '/meja',
+  path: '/meja',
+  getParentRoute: () => KasirRoute,
+} as any)
 const KasirOrdersRoute = KasirOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/admin/stock': typeof AdminStockRoute
   '/admin/tables': typeof AdminTablesRoute
   '/admin/users': typeof AdminUsersRoute
+  '/kasir/meja': typeof KasirMejaRoute
   '/kasir/orders': typeof KasirOrdersRoute
   '/kasir/pos': typeof KasirPosRoute
   '/kasir/stock': typeof KasirStockRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/admin/stock': typeof AdminStockRoute
   '/admin/tables': typeof AdminTablesRoute
   '/admin/users': typeof AdminUsersRoute
+  '/kasir/meja': typeof KasirMejaRoute
   '/kasir/orders': typeof KasirOrdersRoute
   '/kasir/pos': typeof KasirPosRoute
   '/kasir/stock': typeof KasirStockRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/admin/stock': typeof AdminStockRoute
   '/admin/tables': typeof AdminTablesRoute
   '/admin/users': typeof AdminUsersRoute
+  '/kasir/meja': typeof KasirMejaRoute
   '/kasir/orders': typeof KasirOrdersRoute
   '/kasir/pos': typeof KasirPosRoute
   '/kasir/stock': typeof KasirStockRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/admin/stock'
     | '/admin/tables'
     | '/admin/users'
+    | '/kasir/meja'
     | '/kasir/orders'
     | '/kasir/pos'
     | '/kasir/stock'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/admin/stock'
     | '/admin/tables'
     | '/admin/users'
+    | '/kasir/meja'
     | '/kasir/orders'
     | '/kasir/pos'
     | '/kasir/stock'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/admin/stock'
     | '/admin/tables'
     | '/admin/users'
+    | '/kasir/meja'
     | '/kasir/orders'
     | '/kasir/pos'
     | '/kasir/stock'
@@ -488,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KasirIndexRouteImport
       parentRoute: typeof KasirRoute
     }
+    '/kasir/meja': {
+      id: '/kasir/meja'
+      path: '/meja'
+      fullPath: '/kasir/meja'
+      preLoaderRoute: typeof KasirMejaRouteImport
+      parentRoute: typeof KasirRoute
+    }
     '/kasir/orders': {
       id: '/kasir/orders'
       path: '/orders'
@@ -633,6 +652,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface KasirRouteChildren {
+  KasirMejaRoute: typeof KasirMejaRoute
   KasirOrdersRoute: typeof KasirOrdersRoute
   KasirPosRoute: typeof KasirPosRoute
   KasirStockRoute: typeof KasirStockRoute
@@ -640,6 +660,7 @@ interface KasirRouteChildren {
 }
 
 const KasirRouteChildren: KasirRouteChildren = {
+  KasirMejaRoute: KasirMejaRoute,
   KasirOrdersRoute: KasirOrdersRoute,
   KasirPosRoute: KasirPosRoute,
   KasirStockRoute: KasirStockRoute,

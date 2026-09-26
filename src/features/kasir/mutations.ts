@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invalidateKeys } from "@/features/shared/lib/invalidate";
 import { dataQueryFn } from "@/lib/query-helpers";
-import { invalidation } from "@/lib/query-keys";
+import { invalidation, qk } from "@/lib/query-keys";
 import { createOrder } from "@/server/order-functions";
 
 const createOrderFn = dataQueryFn(createOrder);
@@ -19,6 +19,7 @@ export function useCreateOrder() {
 				...invalidation.stock,
 				...invalidation.orders,
 				...invalidation.dashboard,
+				qk.tables.root,
 			]),
 	});
 }
