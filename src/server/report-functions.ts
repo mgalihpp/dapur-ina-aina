@@ -28,7 +28,7 @@ function serializeLaporanOrders(orders: LaporanOrder[]) {
 	return orders.map((o) => ({
 		id: o.id,
 		tanggal: o.tanggal.toISOString(),
-		kasir: o.user.name,
+		kasir: o.user?.name ?? "Kasir Utama",
 		total: o.total.toString(),
 		metode: o.pembayaran?.metode ?? null,
 		itemCount: o.detail.reduce((s, x) => s + x.jumlah, 0),

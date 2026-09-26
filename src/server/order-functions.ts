@@ -45,7 +45,7 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 		paymentStatus: order.pembayaran?.status ?? null,
 		status: order.status,
 		tanggal: order.tanggal.toISOString(),
-		kasir: order.user?.name ?? "Mandiri",
+		kasir: order.user?.name ?? "Kasir Utama",
 		meja: order.meja ? { id: order.meja.id, nama: order.meja.nama, lantai: order.meja.lantai } : null,
 		tamu: order.tamu,
 	};

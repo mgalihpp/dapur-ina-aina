@@ -230,7 +230,7 @@ function PublicInvoiceModal({
 					data={{
 						id: order.id,
 						tanggal: order.tanggal,
-						kasir: "Mandiri",
+						kasir: "Kasir Utama",
 						mejaNama: order.meja,
 						tamu: order.tamu,
 						status: order.status,
