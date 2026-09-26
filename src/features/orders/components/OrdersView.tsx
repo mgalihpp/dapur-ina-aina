@@ -14,6 +14,7 @@ import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { useRecordPayment, useSetOrderStatus } from "../mutations";
 import { useOrderDetail, useOrdersList } from "../queries";
 import { InvoiceModal } from "./InvoiceModal";
+import { OrderList } from "./OrderList";
 
 type OrdersSearch = {
 	start?: string;
@@ -242,43 +243,16 @@ export function OrdersView() {
 					) : null}
 					<div
 						ref={listRef}
-						className="mt-3 max-h-[70dvh] space-y-2 overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm"
+						className="thin-scroll mt-3 max-h-[70dvh] space-y-2 overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm"
 					>
 						{loading ? (
 							<p className="p-5 text-sm text-neutral-500">Memuat transaksi…</p>
 						) : (
-							orders.map((order) => (
-								<button
-									key={order.id}
-									type="button"
-									onClick={() =>
-										selectOrder(selectedId === order.id ? null : order.id)
-									}
-									className={`w-full rounded-xl p-4 text-left ${selectedId === order.id ? "bg-orange-50 ring-1 ring-orange-200" : "bg-neutral-50 hover:bg-neutral-100"}`}
-								>
-									<span className="flex items-center justify-between gap-2">
-										<span className="font-bold">Pesanan #{order.id}</span>
-										<span
-											className={`rounded-full px-2 py-1 text-xs font-semibold ${order.paymentStatus === "lunas" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}
-										>
-											{order.paymentStatus === "lunas"
-												? "Lunas"
-												: order.paymentStatus === "belum_lunas"
-													? "Belum lunas"
-													: "Belum dibayar"}
-										</span>
-									</span>
-									<span className="mt-2 flex justify-between gap-2 text-sm text-neutral-500">
-										<span>
-											{fmtDateTime(order.tanggal)} · {order.kasir} ·{" "}
-											{order.status}
-										</span>
-										<span className="font-semibold text-neutral-900">
-											{fmtDecimalMoney(order.total)}
-										</span>
-									</span>
-								</button>
-							))
+							<OrderList
+								orders={orders}
+								selectedId={selectedId}
+								onSelect={(id) => selectOrder(selectedId === id ? null : id)}
+							/>
 						)}
 						{!loading && orders.length === 0 ? (
 							<EmptyState
