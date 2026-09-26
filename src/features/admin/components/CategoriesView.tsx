@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SimpleRowsSkeleton } from "@/components/ui/skeletons";
 import {
 	Table,
 	TableBody,
@@ -175,11 +175,7 @@ export function CategoriesView() {
 				</CardHeader>
 				<CardContent className="px-0">
 					{loading ? (
-						<div className="space-y-2 px-4 py-4">
-							{["r1", "r2", "r3"].map((k) => (
-								<Skeleton key={k} className="h-12 w-full" />
-							))}
-						</div>
+						<SimpleRowsSkeleton count={3} />
 					) : filtered.length === 0 ? (
 						<EmptyState
 							variant="category"

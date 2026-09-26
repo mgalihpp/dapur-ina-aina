@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ProductFormView } from "@/features/products";
 import { useProductDetail } from "@/features/products/queries";
+import { ProductFormSkeleton } from "@/components/ui/skeletons";
 
 export const Route = createFileRoute("/admin/menu/$productId/edit")({
 	component: EditProductRoute,
@@ -12,11 +13,7 @@ function EditProductRoute() {
 	const productQuery = useProductDetail(productId);
 
 	if (productQuery.isPending) {
-		return (
-			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
-				<p className="text-sm text-neutral-500">Memuat menu…</p>
-			</div>
-		);
+		return <ProductFormSkeleton />;
 	}
 
 	if (productQuery.isError || !productQuery.data) {

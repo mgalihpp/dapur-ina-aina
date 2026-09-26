@@ -16,6 +16,7 @@ import { SearchSelect } from "@/features/shared/components/search-select";
 import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { useDeleteOrder, useRecordPayment, useSetOrderStatus } from "../mutations";
+import { OrderDetailSkeleton, OrderListSkeleton } from "@/components/ui/skeletons";
 import { useOrderDetail, useOrdersList } from "../queries";
 import { InvoiceModal } from "./InvoiceModal";
 
@@ -334,12 +335,10 @@ export function OrdersView() {
 							{error}
 						</p>
 					) : null}
-					<div
-						ref={listRef}
-						className="mt-3 max-h-[70dvh] space-y-2 overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm"
+					<div ref={listRef} className="mt-3 max-h-[70dvh] space-y-2 overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm"
 					>
 						{loading ? (
-							<p className="p-5 text-sm text-neutral-500">Memuat transaksi…</p>
+							<OrderListSkeleton />
 						) : (
 							orders.map((order) => (
 								<button
@@ -433,7 +432,7 @@ export function OrdersView() {
 				</section>
 				<section className="min-w-0 self-start rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm xl:sticky xl:top-6">
 					{detailLoading ? (
-						<p className="text-sm text-neutral-500">Memuat detail…</p>
+						<OrderDetailSkeleton />
 					) : !detail ? (
 						<EmptyState
 							variant="orders"

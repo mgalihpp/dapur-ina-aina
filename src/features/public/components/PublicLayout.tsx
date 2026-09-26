@@ -3,6 +3,7 @@ import { EmptyState } from "@/features/shared/components/EmptyState";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
 import { sumMoneyLines } from "@/features/shared/lib/money";
 import type { GuestCartItem, GuestTable } from "../lib/guest-store";
+import { OrderSummaryLinesSkeleton } from "@/components/ui/skeletons";
 
 export function PublicPageLayout({
 	children,
@@ -60,9 +61,7 @@ export function PublicOrderSummary({
 					</span>
 				</div>
 				{!hydrated ? (
-					<p className="mt-4 rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-sm text-[var(--sea-ink-soft)]">
-						Memuat pesanan…
-					</p>
+					<OrderSummaryLinesSkeleton />
 				) : cart.length === 0 ? (
 					<EmptyState
 						variant="cart"

@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SimpleRowsSkeleton } from "@/components/ui/skeletons";
 import {
 	Table,
 	TableBody,
@@ -226,11 +226,7 @@ export function TablesView() {
 				</CardHeader>
 				<CardContent className="px-0">
 					{loading ? (
-						<div className="space-y-2 px-6 py-2">
-							{["r1", "r2", "r3", "r4"].map((k) => (
-								<Skeleton key={k} className="h-14 w-full" />
-							))}
-						</div>
+						<SimpleRowsSkeleton />
 					) : filtered.length === 0 ? (
 						<EmptyState
 							variant="table"

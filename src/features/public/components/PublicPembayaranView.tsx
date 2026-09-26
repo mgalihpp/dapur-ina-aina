@@ -14,6 +14,7 @@ import {
 } from "../lib/guest-store";
 import { useCreatePublicOrderMutation } from "../mutations";
 import { PublicOrderSummary, PublicPageLayout } from "./PublicLayout";
+import { PaymentSkeleton } from "@/components/ui/skeletons";
 
 export function PublicPembayaranView() {
 	const navigate = useNavigate();
@@ -180,7 +181,7 @@ export function PublicPembayaranView() {
 			) : null}
 
 			{!hydrated ? (
-				<p className="mt-6 text-sm text-neutral-500">Memuat ringkasan…</p>
+				<PaymentSkeleton />
 			) : cart.length === 0 ? (
 				<EmptyState
 					variant="cart"

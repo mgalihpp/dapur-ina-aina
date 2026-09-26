@@ -17,6 +17,7 @@ import {
 	useGuestStore,
 } from "../lib/guest-store";
 import { usePublicOrderQueries } from "../queries";
+import { GuestOrdersSkeleton } from "@/components/ui/skeletons";
 
 type Row = {
 	id: number;
@@ -82,9 +83,7 @@ export function PublicPesananView() {
 	if (loading) {
 		return (
 			<main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 sm:px-8">
-				<div className="rounded-2xl border border-neutral-100 bg-white p-8 shadow-sm">
-					<p className="text-sm text-neutral-500">Memuat pesanan…</p>
-				</div>
+				<GuestOrdersSkeleton count={saved.length > 0 ? saved.length : 6} />
 			</main>
 		);
 	}

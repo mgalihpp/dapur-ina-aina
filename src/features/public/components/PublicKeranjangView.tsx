@@ -12,6 +12,7 @@ import {
 	useGuestStore,
 } from "../lib/guest-store";
 import { PublicOrderSummary, PublicPageLayout } from "./PublicLayout";
+import { CartSkeleton } from "@/components/ui/skeletons";
 
 function lineTotal(price: string, quantity: number): string {
 	return sumMoneyLines([{ price, quantity }]);
@@ -73,7 +74,7 @@ export function PublicKeranjangView() {
 			</div>
 
 			{!hydrated ? (
-				<p className="mt-6 text-sm text-neutral-500">Memuat keranjang…</p>
+				<CartSkeleton />
 			) : cart.length === 0 ? (
 				<EmptyState
 					variant="cart"

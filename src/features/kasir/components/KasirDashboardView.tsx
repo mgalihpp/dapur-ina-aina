@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { queryErrorMessage } from "@/lib/query-errors";
 import { useCashierDashboard } from "../queries";
+import { KasirDashboardSkeleton } from "@/components/ui/skeletons";
 
 const STOCK_KEY = "kasir-stock-warning-open";
 
@@ -15,6 +16,7 @@ export function KasirDashboardView() {
 	const [stockOpen, setStockOpen] = useState(readStockOpen);
 	const dashboardQuery = useCashierDashboard();
 	const summary = dashboardQuery.data ?? null;
+	const dashboardLoading = dashboardQuery.isPending;
 	const error = dashboardQuery.isError
 		? queryErrorMessage(dashboardQuery.error, "Gagal memuat dasbor.")
 		: null;
@@ -35,6 +37,10 @@ export function KasirDashboardView() {
 	return (
 		<main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 sm:px-8">
 			<h1 className="text-2xl font-bold">Dasbor kasir</h1>
+			{dashboardLoading ? (
+				<KasirDashboardSkeleton />
+			) : (
+				<>
 			{error ? (
 				<p
 					role="alert"
@@ -123,6 +129,8 @@ export function KasirDashboardView() {
 			>
 				Lihat pesanan
 			</Link>
+				</>
+			)}
 		</main>
 	);
 }

@@ -7,6 +7,7 @@ import { ConfirmModal } from "@/features/shared/components/ConfirmModal";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { kasirMejaOccupancyOptions } from "../queries";
+import { KasirMejaSkeleton } from "@/components/ui/skeletons";
 
 function shortLabel(nama: string): string {
 	const match = nama.match(/(\d+)\s*$/);
@@ -87,11 +88,7 @@ export function MejaKasirView() {
 	}
 
 	if (occupancyQuery.isPending) {
-		return (
-			<main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 sm:px-8">
-				<p className="text-sm text-neutral-500">Memuat denah meja…</p>
-			</main>
-		);
+		return <KasirMejaSkeleton />;
 	}
 
 	return (

@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { MejaPlan } from "@/features/shared/components/MejaPlan";
+import { PublicMejaSkeleton } from "@/components/ui/skeletons";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicMeja } from "@/server/public-functions";
 import {
@@ -145,7 +146,7 @@ export function PublicMejaView() {
 				</p>
 			) : null}
 			{!hydrated || loading ? (
-				<p className="mt-8 text-sm text-neutral-500">Memuat meja…</p>
+				<PublicMejaSkeleton />
 			) : visible.length === 0 ? (
 				<EmptyState
 					variant="table"

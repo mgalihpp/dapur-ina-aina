@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { MenuCard } from "@/features/shared/components/MenuCard";
+import { PublicMenuSkeleton } from "@/components/ui/skeletons";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicCatalogProduct } from "@/server/public-functions";
 import {
@@ -195,7 +196,7 @@ export function PublicMenuView() {
 				</p>
 			) : null}
 			{!hydrated || loading ? (
-				<p className="mt-8 text-sm text-neutral-500">Memuat menu…</p>
+				<PublicMenuSkeleton />
 			) : visibleProducts.length === 0 ? (
 				products.length === 0 ? (
 					<EmptyState

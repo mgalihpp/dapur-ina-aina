@@ -10,6 +10,7 @@ import { useDeleteProduct } from "../mutations";
 import { useAdminProducts } from "../queries";
 import type { DeleteTarget } from "../types";
 import { DeleteProductModal } from "./DeleteProductModal";
+import { ProductTableSkeleton } from "@/components/ui/skeletons";
 import { ProductTable } from "./ProductTable";
 
 export function ProductsView() {
@@ -116,9 +117,7 @@ export function ProductsView() {
 			</div>
 			<div className="overflow-x-auto rounded-b-2xl border border-t-0 border-neutral-100 bg-white shadow-sm">
 				{loading ? (
-					<p className="px-4 py-8 text-center text-sm text-neutral-500">
-						Memuat menu…
-					</p>
+					<ProductTableSkeleton />
 				) : filteredProducts.length === 0 ? (
 					products.length === 0 ? (
 						<EmptyState

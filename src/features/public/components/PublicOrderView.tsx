@@ -8,6 +8,7 @@ import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicOrderDetail } from "@/server/public-functions";
 import { publicOrderQueryOptions } from "../queries";
+import { OrderReceiptSkeleton } from "@/components/ui/skeletons";
 
 function orderStatusLabel(status: PublicOrderDetail["status"]): string {
 	if (status === "diproses") return "Diproses";
@@ -61,7 +62,7 @@ export function PublicOrderView({ orderId }: { orderId: string }) {
 	if (loading) {
 		return (
 			<main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-10 sm:px-8">
-				<p className="text-sm text-neutral-500">Memuat pesanan…</p>
+				<OrderReceiptSkeleton />
 			</main>
 		);
 	}

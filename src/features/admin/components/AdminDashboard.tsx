@@ -5,6 +5,7 @@ import { queryErrorMessage } from "@/lib/query-errors";
 import { useAdminDashboard, useStockOverview } from "../queries";
 import type { DashboardPeriod, PeriodData } from "../types";
 import { BestDishesList } from "./BestDishesList";
+import { AdminDashboardSkeleton } from "@/components/ui/skeletons";
 import { DailySellingChart } from "./DailySellingChart";
 import { DashboardEmpty } from "./DashboardEmpty";
 import { PeriodFilter } from "./PeriodFilter";
@@ -131,7 +132,7 @@ export function AdminDashboard() {
 				</section>
 			) : null}
 			{loading ? (
-				<p className="mt-6 text-sm text-neutral-500">Memuat dasbor…</p>
+				<AdminDashboardSkeleton />
 			) : !data ||
 				(data.income.length === 0 &&
 					data.daily.length === 0 &&

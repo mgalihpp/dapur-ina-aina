@@ -22,6 +22,7 @@ import {
 	useReportList,
 } from "../queries";
 import { PeriodePicker, type Rentang } from "./PeriodePicker";
+import { ReportDetailSkeleton, ReportStatsSkeleton } from "@/components/ui/skeletons";
 
 function toCsv(detail: ReportDetail): string {
 	const head = "no_pesanan;tanggal;kasir;metode;total;jumlah_item";
@@ -77,6 +78,7 @@ export function ReportsView() {
 	const loading = listQuery.isPending;
 	const detailQuery = useReportDetail(selection);
 	const detail = detailQuery.data ?? null;
+	const detailLoading = detailQuery.isPending;
 	const generateMutation = useGenerateReport();
 	const working = generateMutation.isPending || detailQuery.isFetching === true;
 
@@ -254,6 +256,8 @@ export function ReportsView() {
 						</span>
 					</div>
 				</div>
+			) : working ? (
+				<ReportStatsSkeleton />
 			) : null}
 
 			<div className="mt-5 grid grid-cols-1 items-start gap-5 xl:grid-cols-[380px_1fr]">
@@ -381,14 +385,18 @@ export function ReportsView() {
 						</p>
 					) : null}
 					{!detail ? (
-						<EmptyState
-							variant="report"
-							title="Pilih laporan"
-							description="Pilih laporan tersimpan atau generate periode baru untuk melihat rinciannya."
-							size="md"
-							surface="plain"
-							className="px-5 py-10"
-						/>
+						detailLoading ? (
+							<ReportDetailSkeleton />
+						) : (
+							<EmptyState
+								variant="report"
+								title="Pilih laporan"
+								description="Pilih laporan tersimpan atau generate periode baru untuk melihat rinciannya."
+								size="md"
+								surface="plain"
+								className="px-5 py-10"
+							/>
+						)
 					) : detail.pesanan.length === 0 ? (
 						<EmptyState
 							variant="report"
