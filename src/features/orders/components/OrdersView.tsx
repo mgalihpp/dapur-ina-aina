@@ -1,14 +1,8 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import { EmptyState } from "@/features/shared/components/EmptyState";
+import { SearchSelect } from "@/features/shared/components/search-select";
 import { fmtDecimalMoney } from "@/features/shared/lib/format";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { useRecordPayment, useSetOrderStatus } from "../mutations";
@@ -165,27 +159,25 @@ export function OrdersView() {
 						</label>
 						<div className="text-xs font-medium text-neutral-500">
 							Status
-							<Select
+							<SearchSelect
 								value={status || "all"}
-								onValueChange={(value) =>
+								onChange={(value) =>
 									patchSearch({
 										status: value === "all" ? undefined : value,
 									})
 								}
-							>
-								<SelectTrigger
-									aria-label="Filter status"
-									className="mt-1 w-full rounded-lg border-neutral-200 bg-white px-2 py-2 text-sm text-neutral-900"
-								>
-									<SelectValue placeholder="Semua status" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">Semua status</SelectItem>
-									<SelectItem value="diproses">Diproses</SelectItem>
-									<SelectItem value="selesai">Selesai</SelectItem>
-									<SelectItem value="dibatalkan">Dibatalkan</SelectItem>
-								</SelectContent>
-							</Select>
+								options={[
+									{ value: "all", label: "Semua status" },
+									{ value: "diproses", label: "Diproses" },
+									{ value: "selesai", label: "Selesai" },
+									{ value: "dibatalkan", label: "Dibatalkan" },
+								]}
+								placeholder="Semua status"
+								searchPlaceholder="Cari status…"
+								emptyText="Tidak ada status yang cocok."
+								ariaLabel="Filter status"
+								className="mt-1 w-full"
+							/>
 						</div>
 						<label className="text-xs font-medium text-neutral-500">
 							Nama produk
@@ -369,26 +361,24 @@ export function OrdersView() {
 									>
 										<div className="text-xs font-medium text-neutral-500">
 											Metode
-											<Select
+											<SearchSelect
 												value={method}
-												onValueChange={(value) =>
+												onChange={(value) =>
 													setMethod(
 														value === "non_tunai" ? "non_tunai" : "tunai",
 													)
 												}
 												disabled={detail.paymentStatus === "belum_lunas"}
-											>
-												<SelectTrigger
-													aria-label="Metode pembayaran"
-													className="mt-1 w-full rounded-lg border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900"
-												>
-													<SelectValue placeholder="Pilih metode" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="tunai">Tunai</SelectItem>
-													<SelectItem value="non_tunai">Non-tunai</SelectItem>
-												</SelectContent>
-											</Select>
+												options={[
+													{ value: "tunai", label: "Tunai" },
+													{ value: "non_tunai", label: "Non-tunai" },
+												]}
+												placeholder="Pilih metode"
+												searchPlaceholder="Cari metode…"
+												emptyText="Tidak ada metode yang cocok."
+												ariaLabel="Metode pembayaran"
+												className="mt-1 w-full"
+											/>
 										</div>
 										<label className="text-xs font-medium text-neutral-500">
 											Jumlah kumulatif diterima

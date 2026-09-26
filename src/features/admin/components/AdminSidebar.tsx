@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
-	Armchair,
 	BarChart3,
 	Boxes,
 	ClipboardList,
@@ -15,6 +14,7 @@ import {
 	AppSidebar,
 	type SidebarItem,
 } from "@/features/shared/components/AppSidebar";
+import { TableIcon } from "@/features/shared/components/table-icon";
 
 type AdminSidebarProps = {
 	active?:
@@ -57,7 +57,7 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 			to: "/admin/categories",
 		},
 		{
-			icon: Armchair,
+			icon: TableIcon,
 			label: "Meja",
 			active: active === "tables",
 			to: "/admin/tables",

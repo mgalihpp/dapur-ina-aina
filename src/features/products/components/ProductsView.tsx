@@ -1,14 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
+import { Search } from "lucide-react";
 import { useState } from "react";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useCategories } from "@/features/admin/queries";
 import { EmptyState } from "@/features/shared/components/EmptyState";
+import { SearchSelect } from "@/features/shared/components/search-select";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { useDeleteProduct } from "../mutations";
 import { useAdminProducts } from "../queries";
@@ -25,6 +21,7 @@ export function ProductsView() {
 	const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [categoryId, setCategoryId] = useState("all");
+	const [query, setQuery] = useState("");
 
 	const products = productsQuery.data ?? [];
 	const categories = categoriesQuery.data ?? [];
@@ -37,10 +34,22 @@ export function ProductsView() {
 			: null;
 	const notice = error ?? loadError;
 
-	const filteredProducts =
-		categoryId === "all"
-			? products
-			: products.filter((product) => String(product.kategoriId) === categoryId);
+	const filteredProducts = products.filter((product) => {
+		if (categoryId !== "all" && String(product.kategoriId) !== categoryId)
+			return false;
+		if (
+			query &&
+			!`${product.name} ${product.kategori}`
+				.toLowerCase()
+				.includes(query.toLowerCase())
+		)
+			return false;
+		return true;
+	});
+	function resetFilters() {
+		setQuery("");
+		setCategoryId("all");
+	}
 
 	function confirmDelete() {
 		if (!deleteTarget || deleting) return;
@@ -72,29 +81,38 @@ export function ProductsView() {
 					{notice}
 				</p>
 			) : null}
-			<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border border-neutral-100 bg-white px-4 py-3">
-				<div className="flex items-center gap-2 text-sm text-neutral-600">
-					<span>Kategori</span>
-					<Select value={categoryId} onValueChange={setCategoryId}>
-						<SelectTrigger
-							aria-label="Filter kategori"
-							className="w-[200px] rounded-lg border-neutral-200 bg-white text-neutral-900"
-						>
-							<SelectValue placeholder="Semua kategori" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Semua kategori</SelectItem>
-							{categories.map((category) => (
-								<SelectItem key={category.id} value={String(category.id)}>
-									{category.namaKategori}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-				<p className="text-sm text-neutral-500">
-					{filteredProducts.length} produk
+			<div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-t-2xl border border-neutral-100 bg-white px-4 py-3">
+				<p className="text-sm text-muted-foreground">
+					{filteredProducts.length} dari {products.length} produk
 				</p>
+				<div className="flex flex-wrap items-center gap-2">
+					<div className="relative">
+						<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							aria-label="Cari produk"
+							placeholder="Cari produk…"
+							value={query}
+							onChange={(event) => setQuery(event.target.value)}
+							className="w-[200px] pl-9"
+						/>
+					</div>
+					<SearchSelect
+						value={categoryId}
+						onChange={setCategoryId}
+						options={[
+							{ value: "all", label: "Semua kategori" },
+							...categories.map((category) => ({
+								value: String(category.id),
+								label: category.namaKategori,
+							})),
+						]}
+						placeholder="Semua kategori"
+						searchPlaceholder="Cari kategori…"
+						emptyText="Tidak ada kategori yang cocok."
+						ariaLabel="Filter kategori"
+						className="w-[200px]"
+					/>
+				</div>
 			</div>
 			<div className="overflow-x-auto rounded-b-2xl border border-t-0 border-neutral-100 bg-white shadow-sm">
 				{loading ? (
@@ -121,15 +139,15 @@ export function ProductsView() {
 					) : (
 						<EmptyState
 							variant="search"
-							title="Tidak ada produk di kategori ini"
-							description="Coba pilih kategori lain untuk melihat produk yang tersedia."
+							title="Tidak ada produk yang cocok"
+							description="Coba ubah kata kunci atau kosongkan filter kategori."
 							action={
 								<button
 									type="button"
-									onClick={() => setCategoryId("all")}
+									onClick={resetFilters}
 									className="rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-bold text-[var(--sea-ink)] transition hover:bg-neutral-50"
 								>
-									Lihat semua kategori
+									Reset filter
 								</button>
 							}
 							className="m-4"

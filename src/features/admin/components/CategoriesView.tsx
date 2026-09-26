@@ -1,4 +1,39 @@
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { useAdminProducts } from "@/features/products/queries";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import {
@@ -12,30 +47,61 @@ type Category = { id: number; namaKategori: string };
 
 export function CategoriesView() {
 	const categoriesQuery = useCategories();
+	const productsQuery = useAdminProducts();
 	const createCategory = useCreateCategory();
 	const updateCategory = useUpdateCategory();
 	const deleteCategory = useDeleteCategory();
 
 	const [name, setName] = useState("");
 	const [editing, setEditing] = useState<Category | null>(null);
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [query, setQuery] = useState("");
 
 	const categories = categoriesQuery.data ?? [];
-	const loading = categoriesQuery.isPending;
+	const products = productsQuery.data ?? [];
+	const loading = categoriesQuery.isPending || productsQuery.isPending;
 	const busy = createCategory.isPending || updateCategory.isPending;
+	const deleting = deleteCategory.isPending;
 	const loadError = categoriesQuery.isError
 		? queryErrorMessage(categoriesQuery.error, "Gagal memuat kategori.")
-		: null;
+		: productsQuery.isError
+			? queryErrorMessage(productsQuery.error, "Gagal memuat produk.")
+			: null;
 	const notice = error ?? loadError;
+
+	const countByCategory = new Map<number, number>();
+	for (const product of products) {
+		countByCategory.set(
+			product.kategoriId,
+			(countByCategory.get(product.kategoriId) ?? 0) + 1,
+		);
+	}
+
+	const filtered = categories.filter((category) =>
+		category.namaKategori.toLowerCase().includes(query.toLowerCase()),
+	);
+
+	function openAdd() {
+		setEditing(null);
+		setName("");
+		setError(null);
+		setDialogOpen(true);
+	}
+
+	function beginEdit(category: Category) {
+		setEditing(category);
+		setName(category.namaKategori);
+		setError(null);
+		setDialogOpen(true);
+	}
 
 	function save(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (busy) return;
 		setError(null);
-		const onSuccess = () => {
-			setName("");
-			setEditing(null);
-		};
+		const onSuccess = () => setDialogOpen(false);
 		const onError = (cause: unknown) =>
 			setError(mutationErrorMessage(cause, "Gagal menyimpan kategori."));
 		if (editing) {
@@ -48,113 +114,232 @@ export function CategoriesView() {
 		}
 	}
 
-	function remove(category: Category) {
-		if (!window.confirm(`Hapus kategori ${category.namaKategori}?`)) return;
+	function confirmDelete() {
+		if (!deleteTarget || deleting) return;
 		setError(null);
 		deleteCategory.mutate(
-			{ id: category.id },
+			{ id: deleteTarget.id },
 			{
-				onError: (cause) =>
-					setError(mutationErrorMessage(cause, "Gagal menghapus kategori.")),
+				onSuccess: () => setDeleteTarget(null),
+				onError: (cause) => {
+					setDeleteTarget(null);
+					setError(mutationErrorMessage(cause, "Gagal menghapus kategori."));
+				},
 			},
 		);
 	}
 
 	return (
 		<main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-8">
-			<h1 className="text-2xl font-bold">Kategori</h1>
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<h1 className="text-2xl font-bold tracking-tight">Kategori</h1>
+				<Button
+					type="button"
+					onClick={openAdd}
+					className="bg-[#EF7D1A] text-white hover:bg-[#ea6a0a]"
+				>
+					<Plus /> Tambah kategori
+				</Button>
+			</div>
+
 			{notice ? (
-				<p
-					role="alert"
-					className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
-				>
-					{notice}
-				</p>
+				<Alert variant="destructive" className="mt-4">
+					<AlertTitle>Gagal memuat</AlertTitle>
+					<AlertDescription>{notice}</AlertDescription>
+				</Alert>
 			) : null}
-			<form
-				onSubmit={(event) => save(event)}
-				className="mt-5 flex flex-wrap gap-3 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm"
-			>
-				<label className="min-w-0 flex-1">
-					<span className="sr-only">Nama kategori</span>
-					<input
-						value={name}
-						onChange={(event) => setName(event.target.value)}
-						maxLength={50}
-						required
-						placeholder="Contoh: Minuman"
-						className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm outline-none focus:border-orange-500"
-					/>
-				</label>
-				<button
-					type="submit"
-					disabled={busy}
-					className="rounded-lg bg-[#F97316] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-				>
-					{busy
-						? "Menyimpan…"
-						: editing
-							? "Simpan perubahan"
-							: "Tambah kategori"}
-				</button>
-				{editing ? (
-					<button
-						type="button"
-						onClick={() => {
-							setEditing(null);
-							setName("");
-						}}
-						className="rounded-lg border border-neutral-200 px-4 py-2.5 text-sm"
-					>
-						Batal
-					</button>
-				) : null}
-			</form>
-			<ul className="mt-4 divide-y divide-neutral-100 rounded-2xl border border-neutral-100 bg-white shadow-sm">
-				{categories.map((category) => (
-					<li
-						key={category.id}
-						className="flex items-center justify-between gap-4 px-4 py-3"
-					>
-						<span className="font-medium">{category.namaKategori}</span>
-						<div className="flex gap-2">
-							<button
-								type="button"
-								onClick={() => {
-									setEditing(category);
-									setName(category.namaKategori);
-								}}
-								className="rounded-md border border-neutral-200 px-3 py-1.5 text-sm"
-							>
-								Ubah
-							</button>
-							<button
-								type="button"
-								onClick={() => remove(category)}
-								className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700"
-							>
-								Hapus
-							</button>
+
+			<Card className="mt-5">
+				<CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<CardTitle className="text-sm font-medium text-muted-foreground">
+						{filtered.length} dari {categories.length} kategori
+					</CardTitle>
+					<div className="relative">
+						<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							aria-label="Cari kategori"
+							placeholder="Cari kategori…"
+							value={query}
+							onChange={(e) => setQuery(e.target.value)}
+							className="w-[220px] pl-9"
+						/>
+					</div>
+				</CardHeader>
+				<CardContent className="px-0">
+					{loading ? (
+						<div className="space-y-2 px-4 py-4">
+							{["r1", "r2", "r3"].map((k) => (
+								<Skeleton key={k} className="h-12 w-full" />
+							))}
 						</div>
-					</li>
-				))}
-				{loading ? (
-					<li className="px-4 py-8 text-center text-sm text-neutral-500">
-						Memuat kategori…
-					</li>
-				) : categories.length === 0 ? (
-					<li>
+					) : filtered.length === 0 ? (
 						<EmptyState
 							variant="category"
-							title="Belum ada kategori"
-							description="Buat kategori seperti Makanan Utama, Appetizer, atau Minuman untuk mengelompokkan menu."
+							title={
+								categories.length === 0
+									? "Belum ada kategori"
+									: "Tidak ada kategori yang cocok"
+							}
+							description={
+								categories.length === 0
+									? "Buat kategori seperti Makanan Utama, Appetizer, atau Minuman untuk mengelompokkan menu."
+									: "Coba ubah kata kunci pencarian."
+							}
+							action={
+								categories.length === 0 ? (
+									<Button
+										type="button"
+										onClick={openAdd}
+										className="bg-[#EF7D1A] text-white hover:bg-[#ea6a0a]"
+									>
+										<Plus /> Buat kategori pertama
+									</Button>
+								) : (
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => setQuery("")}
+									>
+										Reset pencarian
+									</Button>
+								)
+							}
 							size="sm"
 							surface="plain"
 							className="px-4 py-8"
 						/>
-					</li>
-				) : null}
-			</ul>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Nama kategori</TableHead>
+									<TableHead>Produk</TableHead>
+									<TableHead className="text-right">Aksi</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filtered.map((category) => {
+									const count = countByCategory.get(category.id) ?? 0;
+									return (
+										<TableRow key={category.id}>
+											<TableCell className="font-medium">
+												{category.namaKategori}
+											</TableCell>
+											<TableCell>
+												<Badge variant="secondary">{count} produk</Badge>
+											</TableCell>
+											<TableCell className="text-right">
+												<div className="flex items-center justify-end gap-4">
+													<button
+														type="button"
+														aria-label={`Ubah ${category.namaKategori}`}
+														onClick={() => beginEdit(category)}
+														className="flex items-center gap-1 text-[13px] font-semibold text-green-600 transition hover:opacity-80"
+													>
+														<Pencil className="h-3.5 w-3.5" />
+														Ubah
+													</button>
+													<button
+														type="button"
+														aria-label={`Hapus ${category.namaKategori}`}
+														onClick={() => setDeleteTarget(category)}
+														className="flex items-center gap-1 text-[13px] font-semibold text-[#EF7D1A] transition hover:opacity-80"
+													>
+														<Trash2 className="h-3.5 w-3.5" />
+														Hapus
+													</button>
+												</div>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+							</TableBody>
+						</Table>
+					)}
+				</CardContent>
+			</Card>
+
+			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>
+							{editing ? "Ubah kategori" : "Tambah kategori"}
+						</DialogTitle>
+						<DialogDescription>
+							{editing
+								? `Nama baru berlaku ke semua produk dalam ${editing.namaKategori}.`
+								: "Contoh: Makanan Utama, Appetizer, atau Minuman."}
+						</DialogDescription>
+					</DialogHeader>
+					<form onSubmit={save} className="grid gap-4">
+						<div className="grid gap-2">
+							<Label htmlFor="category-name">Nama kategori</Label>
+							<Input
+								id="category-name"
+								value={name}
+								onChange={(e) => setName(e.target.value)}
+								maxLength={50}
+								required
+								placeholder="Contoh: Minuman"
+							/>
+						</div>
+						{error ? (
+							<Alert variant="destructive">
+								<AlertTitle>Gagal menyimpan</AlertTitle>
+								<AlertDescription>{error}</AlertDescription>
+							</Alert>
+						) : null}
+						<DialogFooter>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setDialogOpen(false)}
+							>
+								Batal
+							</Button>
+							<Button
+								type="submit"
+								disabled={busy}
+								className="bg-[#EF7D1A] text-white hover:bg-[#ea6a0a]"
+							>
+								{busy
+									? "Menyimpan…"
+									: editing
+										? "Simpan perubahan"
+										: "Tambah kategori"}
+							</Button>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
+
+			<AlertDialog
+				open={deleteTarget !== null}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Hapus kategori ini?</AlertDialogTitle>
+						<AlertDialogDescription>
+							{deleteTarget
+								? `Kategori ${deleteTarget.namaKategori} akan dihapus permanen. Kategori yang masih dipakai produk tidak bisa dihapus.`
+								: ""}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={confirmDelete}
+							disabled={deleting}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							{deleting ? "Menghapus…" : "Hapus kategori"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</main>
 	);
 }

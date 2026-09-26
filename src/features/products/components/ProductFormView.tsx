@@ -2,14 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ImagePlus } from "lucide-react";
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { useCategories } from "@/features/admin/queries";
+import { SearchSelect } from "@/features/shared/components/search-select";
 import { mutationErrorMessage } from "@/lib/query-errors";
 import { useCreateProduct, useUpdateProduct } from "../mutations";
 import type { AdminProduct, ImageSource, ProductFormMode } from "../types";
@@ -240,30 +234,21 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 							>
 								Kategori :
 							</span>
-							<Select
-								value={fields.kategoriId || undefined}
-								onValueChange={(value) => updateField("kategoriId", value)}
-							>
-								<SelectTrigger
-									id="product-category"
-									aria-labelledby="product-category-label"
-									aria-invalid={Boolean(kategoriError)}
-									className={`w-full rounded-lg bg-white px-3 py-2.5 text-sm text-neutral-900 ${
-										kategoriError
-											? "border-red-500 ring-1 ring-red-500"
-											: "border-neutral-200"
-									}`}
-								>
-									<SelectValue placeholder="Pilih Kategori" />
-								</SelectTrigger>
-								<SelectContent>
-									{kategoris.map((k) => (
-										<SelectItem key={k.id} value={String(k.id)}>
-											{k.namaKategori}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<SearchSelect
+								id="product-category"
+								value={fields.kategoriId || ""}
+								onChange={(value) => updateField("kategoriId", value)}
+								options={kategoris.map((k) => ({
+									value: String(k.id),
+									label: k.namaKategori,
+								}))}
+								placeholder="Pilih Kategori"
+								searchPlaceholder="Cari kategori…"
+								emptyText="Tidak ada kategori yang cocok."
+								ariaLabel="Pilih Kategori"
+								className={`w-full ${kategoriError ? "border-red-500 ring-1 ring-red-500" : ""}`}
+							/>
+
 							{kategoriError && (
 								<p className="mt-1 text-xs text-red-500">{kategoriError}</p>
 							)}
