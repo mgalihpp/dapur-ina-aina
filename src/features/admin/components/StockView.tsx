@@ -1,5 +1,6 @@
 import {
 	ArrowDownRight,
+	ArrowRight,
 	ArrowUpRight,
 	Boxes,
 	CalendarIcon,
@@ -24,7 +25,6 @@ import {
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -54,6 +54,7 @@ import {
 	stockBarTone,
 	stockConditionOf,
 } from "@/features/shared/components/stock-status";
+import { fmtDateTime } from "@/features/shared/lib/format";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { useRestockProduct } from "../mutations";
 import { useStockMoves, useStockOverview } from "../queries";
@@ -219,13 +220,9 @@ export function StockView() {
 							<Plus /> Catat stok masuk
 						</Button>
 					</DialogTrigger>
-					<DialogContent>
+					<DialogContent onCloseAutoFocus={(event) => event.preventDefault()}>
 						<DialogHeader>
 							<DialogTitle>Catat stok masuk</DialogTitle>
-							<DialogDescription>
-								Stok bertambah dan tercatat sebagai pergerakan{" "}
-								<Badge variant="secondary">masuk</Badge>.
-							</DialogDescription>
 						</DialogHeader>
 						<form onSubmit={submitRestock} className="grid gap-4">
 							<div className="grid gap-2">
@@ -245,14 +242,6 @@ export function StockView() {
 									ariaLabel="Pilih produk untuk restock"
 									className="w-full"
 								/>
-								{dialogProduct ? (
-									<p className="text-xs text-muted-foreground">
-										{dialogProduct.category} · stok saat ini{" "}
-										<span className="font-semibold text-foreground">
-											{dialogProduct.stock}
-										</span>
-									</p>
-								) : null}
 							</div>
 							<div className="grid gap-2">
 								<Label htmlFor="restock-qty">Jumlah masuk</Label>
@@ -266,6 +255,22 @@ export function StockView() {
 									value={dialogQuantity}
 									onChange={(e) => setDialogQuantity(e.target.value)}
 								/>
+								{dialogProduct &&
+								Number.isInteger(Number(dialogQuantity)) &&
+								Number(dialogQuantity) > 0 ? (
+									<div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
+										<span className="text-muted-foreground tabular-nums">
+											{Number(dialogProduct.stock)}
+										</span>
+										<ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+										<span className="font-bold tabular-nums">
+											{Number(dialogProduct.stock) + Number(dialogQuantity)}
+										</span>
+										<span className="ml-auto text-xs text-muted-foreground tabular-nums">
+											+{Number(dialogQuantity)} masuk
+										</span>
+									</div>
+								) : null}
 							</div>
 							{formError ? (
 								<Alert variant="destructive">
@@ -619,7 +624,9 @@ export function StockView() {
 									<TableBody>
 										{moves.map((m) => (
 											<TableRow key={m.id}>
-												<TableCell className="tabular-nums">{m.date}</TableCell>
+												<TableCell className="whitespace-nowrap tabular-nums">
+													{fmtDateTime(m.date)}
+												</TableCell>
 												<TableCell className="font-medium">
 													{m.product}
 												</TableCell>

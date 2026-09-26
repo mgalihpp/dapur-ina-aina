@@ -35,6 +35,24 @@ type SearchSelectProps = {
 	id?: string;
 };
 
+/**
+ * Dialog modal mengunci scroll halaman dan mematikan event wheel di luar
+ * konten dialog, padahal popover dirender di luar dialog. Listener native ini
+ * berjalan sebelum pengunci itu sehingga wheel di popover tetap menggulir
+ * daftar. Di luar dialog modal tidak melakukan apa-apa.
+ */
+function guardWheel(event: WheelEvent) {
+	if (!document.body.hasAttribute("data-scroll-locked")) return;
+	const target = event.currentTarget;
+	if (!(target instanceof HTMLElement)) return;
+	const list = target.querySelector("[cmdk-list]");
+	if (!(list instanceof HTMLElement)) return;
+	event.preventDefault();
+	event.stopPropagation();
+	const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+	list.scrollTop += delta;
+}
+
 /** Pengganti Select dengan kolom cari. Nilai "" berarti belum dipilih. */
 export function SearchSelect({
 	value,
@@ -50,6 +68,14 @@ export function SearchSelect({
 }: SearchSelectProps) {
 	const [open, setOpen] = useState(false);
 	const selected = options.find((option) => option.value === value);
+
+	function attachWheelGuard(node: HTMLDivElement | null) {
+		if (!node) return;
+		node.addEventListener("wheel", guardWheel, { passive: false });
+		return () => {
+			node.removeEventListener("wheel", guardWheel);
+		};
+	}
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -75,18 +101,20 @@ export function SearchSelect({
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
+				ref={attachWheelGuard}
 				className="w-auto max-w-[calc(100vw-2rem)] p-0 min-w-[var(--radix-popover-trigger-width)]"
 				align="start"
 			>
 				<Command>
 					<CommandInput placeholder={searchPlaceholder} />
-					<CommandList>
+					<CommandList className="max-h-72 overflow-y-auto [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-neutral-300">
 						<CommandEmpty>{emptyText}</CommandEmpty>
 						<CommandGroup>
 							{options.map((option) => (
 								<CommandItem
 									key={option.value}
 									value={`${option.label} ${option.hint ?? ""}`}
+									className="[&>svg:last-child]:hidden"
 									onSelect={() => {
 										onChange(option.value);
 										setOpen(false);

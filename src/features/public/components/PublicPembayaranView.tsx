@@ -53,7 +53,7 @@ export function PublicPembayaranView() {
 				onSuccess: (order) => {
 					addOrder({
 						id: order.id,
-						tanggal: new Date().toISOString().slice(0, 10),
+						tanggal: new Date().toISOString(),
 						meja: meja.nama,
 					});
 					clearCart();

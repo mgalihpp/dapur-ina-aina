@@ -181,7 +181,7 @@ export const getPublicOrderDetail = createServerFn({ method: "GET" })
 		if (!order) throw new Error("Pesanan tidak ditemukan.");
 		return {
 			id: String(order.id),
-			tanggal: order.tanggal.toISOString().slice(0, 10),
+			tanggal: order.tanggal.toISOString(),
 			status: order.status,
 			total: order.total.toFixed(2),
 			meja: order.meja,

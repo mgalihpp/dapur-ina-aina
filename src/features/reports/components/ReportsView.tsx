@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { fmtRp } from "@/features/shared/lib/format";
+import { fmtDateTime, fmtRp } from "@/features/shared/lib/format";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import type { PeriodeKind } from "@/server/periode";
 import { useGenerateReport } from "../mutations";
@@ -420,7 +420,7 @@ export function ReportsView() {
 												#{o.id}
 											</td>
 											<td className="whitespace-nowrap px-4 py-3 text-neutral-600">
-												{o.tanggal}
+												{fmtDateTime(o.tanggal)}
 											</td>
 											<td className="px-4 py-3">{o.kasir}</td>
 											<td className="px-4 py-3">

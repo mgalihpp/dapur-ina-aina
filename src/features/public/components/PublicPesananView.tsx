@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import type { PublicOrderDetail } from "@/server/public-functions";
 import {
 	rehydrateGuestStore,
@@ -60,9 +60,7 @@ function orderAppearance(detail: PublicOrderDetail | null): OrderAppearance {
 }
 
 function shortDate(value: string): string {
-	const [year, month, day] = value.split("-");
-	if (!year || !month || !day) return value;
-	return `${day}/${month}/${year}`;
+	return fmtDateTime(value);
 }
 
 export function PublicPesananView() {

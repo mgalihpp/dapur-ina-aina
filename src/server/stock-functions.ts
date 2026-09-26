@@ -76,6 +76,6 @@ export const listStockMoves = createServerFn({ method: "GET" })
 			product: move.produk.namaProduk,
 			quantity: move.jumlah,
 			type: move.jenis,
-			date: move.tanggal.toISOString().slice(0, 10),
+			date: move.tanggal.toISOString(),
 		}));
 	});

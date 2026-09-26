@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import type { AdminOrderDetail } from "@/server/order-functions";
 
 type InvoiceModalProps = {
@@ -37,7 +37,9 @@ export function InvoiceModal({ order, onClose, onPrinted }: InvoiceModalProps) {
 				</header>
 				<dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 border-y border-dashed border-neutral-300 py-4 text-sm">
 					<dt className="text-neutral-500">Tanggal</dt>
-					<dd className="text-right font-medium">{order.tanggal}</dd>
+					<dd className="text-right font-medium">
+						{fmtDateTime(order.tanggal)}
+					</dd>
 					<dt className="text-neutral-500">Kasir</dt>
 					<dd className="text-right font-medium">{order.kasir}</dd>
 					<dt className="text-neutral-500">Status pesanan</dt>
@@ -57,7 +59,9 @@ export function InvoiceModal({ order, onClose, onPrinted }: InvoiceModalProps) {
 					{order.paymentDate ? (
 						<>
 							<dt className="text-neutral-500">Tanggal bayar</dt>
-							<dd className="text-right font-medium">{order.paymentDate}</dd>
+							<dd className="text-right font-medium">
+								{order.paymentDate ? fmtDateTime(order.paymentDate) : null}
+							</dd>
 						</>
 					) : null}
 				</dl>

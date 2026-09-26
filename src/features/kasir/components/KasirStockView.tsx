@@ -35,6 +35,7 @@ import {
 	stockBarTone,
 	stockConditionOf,
 } from "@/features/shared/components/stock-status";
+import { fmtDateTime } from "@/features/shared/lib/format";
 import { queryErrorMessage } from "@/lib/query-errors";
 import { useCashierStockMoves, useCashierStockOverview } from "../queries";
 
@@ -313,7 +314,9 @@ export function KasirStockView() {
 									<TableBody>
 										{moves.map((m) => (
 											<TableRow key={m.id}>
-												<TableCell className="tabular-nums">{m.date}</TableCell>
+												<TableCell className="whitespace-nowrap tabular-nums">
+													{fmtDateTime(m.date)}
+												</TableCell>
 												<TableCell className="font-medium">
 													{m.product}
 												</TableCell>

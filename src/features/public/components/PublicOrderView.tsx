@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ReceiptText } from "lucide-react";
 import { useState } from "react";
 import QRCode from "react-qr-code";
-import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicOrderDetail } from "@/server/public-functions";
 import { publicOrderQueryOptions } from "../queries";
@@ -151,7 +151,9 @@ export function PublicOrderView({ orderId }: { orderId: string }) {
 						</div>
 						<div>
 							<dt className="text-neutral-500">Tanggal</dt>
-							<dd className="mt-1 font-semibold">{order.tanggal}</dd>
+							<dd className="mt-1 font-semibold">
+								{fmtDateTime(order.tanggal)}
+							</dd>
 						</div>
 						<div>
 							<dt className="text-neutral-500">Total</dt>
@@ -246,7 +248,9 @@ function PublicInvoiceModal({
 				</header>
 				<dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 border-y border-dashed border-neutral-300 py-4 text-sm">
 					<dt className="text-neutral-500">Tanggal</dt>
-					<dd className="text-right font-medium">{view.tanggal}</dd>
+					<dd className="text-right font-medium">
+						{fmtDateTime(view.tanggal)}
+					</dd>
 					<dt className="text-neutral-500">Status pesanan</dt>
 					<dd className="text-right font-medium">
 						{orderStatusLabel(view.status)}

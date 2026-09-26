@@ -23,3 +23,17 @@ export function fmtDecimalMoney(value: string): string {
 }
 
 export const fmtRp = fmtMoney;
+
+export function fmtDateTime(value: string | Date): string {
+	const date = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(date.getTime())) return String(value);
+	const formatted = new Intl.DateTimeFormat("id-ID", {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(date);
+	return formatted.replace(".", ":");
+}

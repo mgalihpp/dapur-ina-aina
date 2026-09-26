@@ -1,9 +1,15 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { CalendarIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
+import {
+	PeriodePicker,
+	type Rentang,
+} from "@/features/reports/components/PeriodePicker";
+import { addDays, toISODate } from "@/features/reports/lib/periode";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { SearchSelect } from "@/features/shared/components/search-select";
-import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { useRecordPayment, useSetOrderStatus } from "../mutations";
 import { useOrderDetail, useOrdersList } from "../queries";
@@ -113,6 +119,31 @@ export function OrdersView() {
 		}
 	}, [selectedId, orders, patchSearch]);
 
+	function parseFilterDate(value: string): Date | undefined {
+		const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+		if (!match) return undefined;
+		const date = new Date(
+			Number(match[1]),
+			Number(match[2]) - 1,
+			Number(match[3]),
+		);
+		return Number.isNaN(date.getTime()) ? undefined : date;
+	}
+
+	const fromDate = parseFilterDate(start);
+	const toDate = parseFilterDate(end);
+	const dateRange: Rentang | null =
+		fromDate && toDate ? { from: fromDate, to: toDate } : null;
+
+	function applyDefaultRange() {
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		patchSearch({
+			start: toISODate(addDays(today, -29)),
+			end: toISODate(today),
+		});
+	}
+
 	// Draft pembayaran mengikuti detail yang sedang dibuka.
 	useEffect(() => {
 		if (!detail) return;
@@ -132,31 +163,43 @@ export function OrdersView() {
 			</div>
 			<div className="mt-4 grid min-h-0 flex-1 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
 				<section className="min-w-0">
-					<div className="grid grid-cols-2 gap-2 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm md:grid-cols-4">
-						<label className="text-xs font-medium text-neutral-500">
-							Dari
-							<input
-								aria-label="Dari tanggal"
-								type="date"
-								value={start}
-								onChange={(event) =>
-									patchSearch({ start: event.target.value || undefined })
-								}
-								className="mt-1 block w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-neutral-900"
-							/>
-						</label>
-						<label className="text-xs font-medium text-neutral-500">
-							Sampai
-							<input
-								aria-label="Sampai tanggal"
-								type="date"
-								value={end}
-								onChange={(event) =>
-									patchSearch({ end: event.target.value || undefined })
-								}
-								className="mt-1 block w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-neutral-900"
-							/>
-						</label>
+					<div className="grid grid-cols-2 gap-2 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm md:grid-cols-3">
+						<div className="text-xs font-medium text-neutral-500">
+							Periode
+							<div className="mt-1 flex flex-wrap items-center gap-2">
+								{dateRange ? (
+									<PeriodePicker
+										range={dateRange}
+										onApply={(r) => {
+											patchSearch({
+												start: toISODate(r.from),
+												end: toISODate(r.to),
+											});
+										}}
+									/>
+								) : (
+									<button
+										type="button"
+										onClick={applyDefaultRange}
+										className="flex items-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-700"
+									>
+										<CalendarIcon className="size-4 shrink-0" />
+										Pilih rentang
+									</button>
+								)}
+								{dateRange ? (
+									<button
+										type="button"
+										onClick={() =>
+											patchSearch({ start: undefined, end: undefined })
+										}
+										className="rounded-xl px-3 py-2.5 text-sm font-semibold text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700"
+									>
+										Reset
+									</button>
+								) : null}
+							</div>
+						</div>
 						<div className="text-xs font-medium text-neutral-500">
 							Status
 							<SearchSelect
@@ -227,7 +270,8 @@ export function OrdersView() {
 									</span>
 									<span className="mt-2 flex justify-between gap-2 text-sm text-neutral-500">
 										<span>
-											{order.tanggal} · {order.kasir} · {order.status}
+											{fmtDateTime(order.tanggal)} · {order.kasir} ·{" "}
+											{order.status}
 										</span>
 										<span className="font-semibold text-neutral-900">
 											{fmtDecimalMoney(order.total)}
@@ -292,7 +336,7 @@ export function OrdersView() {
 								<div>
 									<h2 className="text-xl font-bold">Pesanan #{detail.id}</h2>
 									<p className="mt-1 text-sm text-neutral-500">
-										{detail.tanggal} · Kasir {detail.kasir}
+										{fmtDateTime(detail.tanggal)} · Kasir {detail.kasir}
 									</p>
 								</div>
 								<button

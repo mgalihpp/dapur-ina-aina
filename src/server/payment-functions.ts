@@ -61,7 +61,7 @@ export const recordPayment = createServerFn({ method: "POST" })
 					payment.metode,
 				),
 				method: payment.metode,
-				date: payment.tanggal.toISOString().slice(0, 10),
+				date: payment.tanggal.toISOString(),
 			};
 		});
 	});

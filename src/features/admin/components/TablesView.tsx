@@ -23,7 +23,6 @@ import {
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -145,11 +144,9 @@ export function TablesView() {
 	}
 
 	return (
-		<main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-8">
+		<main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Meja</h1>
-				</div>
+				<h1 className="text-2xl font-bold tracking-tight">Meja</h1>
 				<Button
 					type="button"
 					onClick={openAdd}
@@ -330,11 +327,6 @@ export function TablesView() {
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
 						<DialogTitle>{editing ? "Ubah meja" : "Tambah meja"}</DialogTitle>
-						<DialogDescription>
-							{editing
-								? `Perbarui nama atau lantai ${editing.nama}.`
-								: "Meja baru langsung muncul di halaman pilih meja pelanggan."}
-						</DialogDescription>
 					</DialogHeader>
 					<form onSubmit={save} className="grid gap-4">
 						<div className="grid gap-2">

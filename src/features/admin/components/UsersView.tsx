@@ -172,11 +172,9 @@ export function UsersView() {
 	}
 
 	return (
-		<main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 sm:px-8">
+		<main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Pengguna</h1>
-				</div>
+				<h1 className="text-2xl font-bold tracking-tight">Pengguna</h1>
 				<Button
 					type="button"
 					onClick={openAdd}
@@ -390,11 +388,11 @@ export function UsersView() {
 						<DialogTitle>
 							{editing ? "Ubah pengguna" : "Tambah pengguna"}
 						</DialogTitle>
-						<DialogDescription>
-							{editing
-								? `Perbarui data akun ${editing.name}. Kosongkan kata sandi bila tidak diganti.`
-								: "Akun baru langsung bisa dipakai masuk sesuai perannya."}
-						</DialogDescription>
+						{editing ? (
+							<DialogDescription>
+								Kosongkan kata sandi bila tidak diganti.
+							</DialogDescription>
+						) : null}
 					</DialogHeader>
 					<form onSubmit={save} className="grid gap-4">
 						<div className="grid gap-2 sm:grid-cols-2">

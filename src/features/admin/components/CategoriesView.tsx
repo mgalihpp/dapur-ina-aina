@@ -13,11 +13,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -130,7 +135,7 @@ export function CategoriesView() {
 	}
 
 	return (
-		<main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-8">
+		<main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<h1 className="text-2xl font-bold tracking-tight">Kategori</h1>
 				<Button
@@ -150,10 +155,13 @@ export function CategoriesView() {
 			) : null}
 
 			<Card className="mt-5">
-				<CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<CardTitle className="text-sm font-medium text-muted-foreground">
-						{filtered.length} dari {categories.length} kategori
-					</CardTitle>
+				<CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+					<div>
+						<CardTitle>Daftar kategori</CardTitle>
+						<CardDescription>
+							{filtered.length} dari {categories.length} kategori
+						</CardDescription>
+					</div>
 					<div className="relative">
 						<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
@@ -265,11 +273,6 @@ export function CategoriesView() {
 						<DialogTitle>
 							{editing ? "Ubah kategori" : "Tambah kategori"}
 						</DialogTitle>
-						<DialogDescription>
-							{editing
-								? `Nama baru berlaku ke semua produk dalam ${editing.namaKategori}.`
-								: "Contoh: Makanan Utama, Appetizer, atau Minuman."}
-						</DialogDescription>
 					</DialogHeader>
 					<form onSubmit={save} className="grid gap-4">
 						<div className="grid gap-2">

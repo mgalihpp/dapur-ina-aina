@@ -45,7 +45,7 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 		total: order.total.toFixed(2),
 		paymentStatus: order.pembayaran?.status ?? null,
 		status: order.status,
-		tanggal: order.tanggal.toISOString().slice(0, 10),
+		tanggal: order.tanggal.toISOString(),
 		kasir: order.user?.name ?? "-",
 	};
 }
@@ -109,7 +109,7 @@ export const getOrderDetail = createServerFn({ method: "GET" })
 			...toRow(order),
 			paymentMethod: order.pembayaran?.metode ?? null,
 			paymentAmount: order.pembayaran?.jumlahBayar.toFixed(2) ?? null,
-			paymentDate: order.pembayaran?.tanggal.toISOString().slice(0, 10) ?? null,
+			paymentDate: order.pembayaran?.tanggal.toISOString() ?? null,
 			change:
 				order.pembayaran?.status === "lunas" &&
 				order.pembayaran.metode === "tunai"

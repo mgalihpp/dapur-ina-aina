@@ -27,7 +27,7 @@ type LaporanOrder = Awaited<ReturnType<typeof queryLaporanOrders>>[number];
 function serializeLaporanOrders(orders: LaporanOrder[]) {
 	return orders.map((o) => ({
 		id: o.id,
-		tanggal: o.tanggal.toISOString().slice(0, 10),
+		tanggal: o.tanggal.toISOString(),
 		kasir: o.user.name,
 		total: o.total.toString(),
 		metode: o.pembayaran?.metode ?? null,
