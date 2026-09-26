@@ -37,33 +37,3 @@ export function fmtDateTime(value: string | Date): string {
 	}).format(date);
 	return formatted.replace(".", ":");
 }
-
-export function fmtTanggalJam(value: string | Date): string {
-	const date = value instanceof Date ? value : new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value);
-	const formatted = new Intl.DateTimeFormat("id-ID", {
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-	}).format(date);
-	return formatted.replace(".", ":");
-}
-
-export function fmtOrderDay(value: string | Date, now = new Date()): string {
-	const date = value instanceof Date ? value : new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value);
-	const sameDay =
-		date.getFullYear() === now.getFullYear() &&
-		date.getMonth() === now.getMonth() &&
-		date.getDate() === now.getDate();
-	if (sameDay) return "Hari ini";
-	const options: Intl.DateTimeFormatOptions = {
-		day: "numeric",
-		month: "short",
-	};
-	if (date.getFullYear() !== now.getFullYear()) options.year = "numeric";
-	return new Intl.DateTimeFormat("id-ID", options).format(date);
-}

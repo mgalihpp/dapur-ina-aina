@@ -19,10 +19,9 @@ export type AdminOrderRow = {
 	kasir: string;
 	meja: { id: number; nama: string; lantai: string } | null;
 	tamu: number | null;
-	items: { name: string; qty: number }[];
 };
 
-export type AdminOrderDetail = Omit<AdminOrderRow, "items"> & {
+export type AdminOrderDetail = AdminOrderRow & {
 	paymentMethod: "tunai" | "non_tunai" | null;
 	paymentAmount: string | null;
 	paymentDate: string | null;
@@ -41,10 +40,6 @@ type OrderRowSource = Prisma.PesananGetPayload<{
 		user: { select: { name: true } };
 		pembayaran: { select: { status: true } };
 		meja: { select: { id: true; nama: true; lantai: true } };
-		detail: {
-			include: { produk: { select: { namaProduk: true } } };
-			orderBy: { id: "asc" };
-		};
 	};
 }>;
 
@@ -56,14 +51,8 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 		status: order.status,
 		tanggal: order.tanggal.toISOString(),
 		kasir: order.user?.name ?? "-",
-		meja: order.meja
-			? { id: order.meja.id, nama: order.meja.nama, lantai: order.meja.lantai }
-			: null,
+		meja: order.meja ? { id: order.meja.id, nama: order.meja.nama, lantai: order.meja.lantai } : null,
 		tamu: order.tamu,
-		items: order.detail.map((item) => ({
-			name: item.produk.namaProduk,
-			qty: item.jumlah,
-		})),
 	};
 }
 
@@ -99,10 +88,6 @@ export const listOrders = createServerFn({ method: "GET" })
 				user: { select: { name: true } },
 				pembayaran: { select: { status: true } },
 				meja: { select: { id: true, nama: true, lantai: true } },
-				detail: {
-					include: { produk: { select: { namaProduk: true } } },
-					orderBy: { id: "asc" },
-				},
 			},
 			orderBy: [{ status: "asc" }, { id: "desc" }],
 			take: 200,
@@ -125,7 +110,6 @@ export const getOrderDetail = createServerFn({ method: "GET" })
 				pembayaran: true,
 				meja: { select: { id: true, nama: true, lantai: true } },
 				detail: { include: { produk: { select: { namaProduk: true } } } },
-				_count: { select: { detail: true } },
 			},
 		});
 		if (!order) throw new Error("Pesanan tidak ditemukan.");
@@ -204,7 +188,7 @@ export const createOrder = createServerFn({ method: "POST" })
 				),
 			);
 			if (data.mejaId !== null) await assertMejaFree(tx, data.mejaId);
-			const order = await tx.pesanan.create({
+		const order = await tx.pesanan.create({
 				data: {
 					userId: session.user.id,
 					tanggal: new Date(),
