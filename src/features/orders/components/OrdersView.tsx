@@ -1,6 +1,30 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ReceiptText, RotateCcw, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableFooter,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import {
 	PeriodePicker,
@@ -22,6 +46,38 @@ type OrdersSearch = {
 	product?: string;
 	orderId?: string;
 };
+
+function statusBadgeVariant(status: string) {
+	if (status === "selesai") return "default";
+	if (status === "dibatalkan") return "destructive";
+	return "secondary";
+}
+
+function statusLabel(status: string) {
+	if (status === "selesai") return "Selesai";
+	if (status === "dibatalkan") return "Dibatalkan";
+	return "Diproses";
+}
+
+function paymentBadge(order: { paymentStatus: string }): {
+	label: string;
+	className: string;
+} {
+	if (order.paymentStatus === "lunas")
+		return {
+			label: "Lunas",
+			className: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+		};
+	if (order.paymentStatus === "belum_lunas")
+		return {
+			label: "Belum lunas",
+			className: "bg-amber-50 text-amber-800 ring-amber-200",
+		};
+	return {
+		label: "Belum dibayar",
+		className: "bg-neutral-100 text-neutral-600 ring-neutral-200",
+	};
+}
 
 export function OrdersView() {
 	const search = useSearch({ strict: false }) as OrdersSearch;
@@ -134,6 +190,7 @@ export function OrdersView() {
 	const toDate = parseFilterDate(end);
 	const dateRange: Rentang | null =
 		fromDate && toDate ? { from: fromDate, to: toDate } : null;
+	const hasFilter = Boolean(start || end || status || product);
 
 	function applyDefaultRange() {
 		const now = new Date();
@@ -144,7 +201,16 @@ export function OrdersView() {
 		});
 	}
 
-	// Draft pembayaran mengikuti detail yang sedang dibuka.
+	function resetFilter() {
+		setProductDraft("");
+		patchSearch({
+			start: undefined,
+			end: undefined,
+			status: undefined,
+			product: undefined,
+		});
+	}
+
 	useEffect(() => {
 		if (!detail) return;
 		setPaymentDraft({
@@ -155,172 +221,206 @@ export function OrdersView() {
 
 	return (
 		<main className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col px-4 py-6 sm:px-8">
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<h1 className="text-2xl font-bold">Pesanan</h1>
-				{refreshing ? (
-					<span className="text-sm text-neutral-400">Memperbarui…</span>
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight">Pesanan</h1>
+					<p className="mt-0.5 text-sm text-muted-foreground">
+						{loading
+							? "Memuat transaksi…"
+							: `${orders.length} transaksi${refreshing ? " · memperbarui…" : ""}`}
+					</p>
+				</div>
+				{hasFilter ? (
+					<Button variant="ghost" size="sm" onClick={resetFilter}>
+						<RotateCcw />
+						Reset filter
+					</Button>
 				) : null}
 			</div>
-			<div className="mt-4 grid min-h-0 flex-1 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
-				<section className="min-w-0">
-					<div className="grid grid-cols-2 gap-2 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm md:grid-cols-3">
-						<div className="text-xs font-medium text-neutral-500">
-							Periode
-							<div className="mt-1 flex flex-wrap items-center gap-2">
-								{dateRange ? (
-									<PeriodePicker
-										range={dateRange}
-										onApply={(r) => {
-											patchSearch({
-												start: toISODate(r.from),
-												end: toISODate(r.to),
-											});
-										}}
-									/>
-								) : (
-									<button
-										type="button"
-										onClick={applyDefaultRange}
-										className="flex items-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-700"
-									>
-										<CalendarIcon className="size-4 shrink-0" />
-										Pilih rentang
-									</button>
-								)}
-								{dateRange ? (
-									<button
-										type="button"
-										onClick={() =>
-											patchSearch({ start: undefined, end: undefined })
-										}
-										className="rounded-xl px-3 py-2.5 text-sm font-semibold text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700"
-									>
-										Reset
-									</button>
-								) : null}
+
+			{error ? (
+				<Alert variant="destructive" className="mt-4">
+					<AlertDescription>{error}</AlertDescription>
+				</Alert>
+			) : null}
+
+			<div className="mt-4 grid min-h-0 flex-1 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(340px,0.85fr)_minmax(0,1.15fr)]">
+				<Card size="sm" className="min-w-0">
+					<CardHeader>
+						<CardTitle>Daftar transaksi</CardTitle>
+						<CardDescription>
+							Pilih satu transaksi untuk melihat rincian dan pembayaran.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr]">
+							<div>
+								<Label className="mb-1.5 block text-xs">Periode</Label>
+								<div className="flex items-center gap-1.5">
+									{dateRange ? (
+										<>
+											<PeriodePicker
+												range={dateRange}
+												onApply={(r) => {
+													patchSearch({
+														start: toISODate(r.from),
+														end: toISODate(r.to),
+													});
+												}}
+											/>
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={() =>
+													patchSearch({ start: undefined, end: undefined })
+												}
+											>
+												Reset
+											</Button>
+										</>
+									) : (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={applyDefaultRange}
+										>
+											<CalendarIcon />
+											Pilih rentang
+										</Button>
+									)}
+								</div>
+							</div>
+							<div>
+								<Label className="mb-1.5 block text-xs">Status</Label>
+								<SearchSelect
+									value={status || "all"}
+									onChange={(value) =>
+										patchSearch({
+											status: value === "all" ? undefined : value,
+										})
+									}
+									options={[
+										{ value: "all", label: "Semua status" },
+										{ value: "diproses", label: "Diproses" },
+										{ value: "selesai", label: "Selesai" },
+										{ value: "dibatalkan", label: "Dibatalkan" },
+									]}
+									placeholder="Semua status"
+									searchPlaceholder="Cari status…"
+									emptyText="Tidak ada status yang cocok."
+									ariaLabel="Filter status"
+									className="w-full"
+								/>
 							</div>
 						</div>
-						<div className="text-xs font-medium text-neutral-500">
-							Status
-							<SearchSelect
-								value={status || "all"}
-								onChange={(value) =>
-									patchSearch({
-										status: value === "all" ? undefined : value,
-									})
-								}
-								options={[
-									{ value: "all", label: "Semua status" },
-									{ value: "diproses", label: "Diproses" },
-									{ value: "selesai", label: "Selesai" },
-									{ value: "dibatalkan", label: "Dibatalkan" },
-								]}
-								placeholder="Semua status"
-								searchPlaceholder="Cari status…"
-								emptyText="Tidak ada status yang cocok."
-								ariaLabel="Filter status"
-								className="mt-1 w-full"
-							/>
-						</div>
-						<label className="text-xs font-medium text-neutral-500">
-							Nama produk
-							<input
+						<div className="relative">
+							<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
 								value={productDraft}
 								onChange={(event) => setProductDraft(event.target.value)}
-								placeholder="Cari produk"
-								className="mt-1 block w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-neutral-900"
+								placeholder="Cari nama produk…"
+								aria-label="Cari nama produk"
+								className="pl-9"
 							/>
-						</label>
-					</div>
-					{error ? (
-						<p
-							role="alert"
-							className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
-						>
-							{error}
-						</p>
-					) : null}
-					<div
-						ref={listRef}
-						className="mt-3 max-h-[70dvh] space-y-2 overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm"
-					>
-						{loading ? (
-							<p className="p-5 text-sm text-neutral-500">Memuat transaksi…</p>
-						) : (
-							orders.map((order) => (
-								<button
-									key={order.id}
-									type="button"
-									onClick={() =>
-										selectOrder(selectedId === order.id ? null : order.id)
-									}
-									className={`w-full rounded-xl p-4 text-left ${selectedId === order.id ? "bg-orange-50 ring-1 ring-orange-200" : "bg-neutral-50 hover:bg-neutral-100"}`}
-								>
-									<span className="flex items-center justify-between gap-2">
-										<span className="font-bold">Pesanan #{order.id}</span>
-										<span
-											className={`rounded-full px-2 py-1 text-xs font-semibold ${order.paymentStatus === "lunas" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}
-										>
-											{order.paymentStatus === "lunas"
-												? "Lunas"
-												: order.paymentStatus === "belum_lunas"
-													? "Belum lunas"
-													: "Belum dibayar"}
-										</span>
-									</span>
-									<span className="mt-2 flex justify-between gap-2 text-sm text-neutral-500">
-										<span>
-											{fmtDateTime(order.tanggal)} · {order.kasir} ·{" "}
-											{order.status}
-										</span>
-										<span className="font-semibold text-neutral-900">
-											{fmtDecimalMoney(order.total)}
-										</span>
-									</span>
-								</button>
-							))
-						)}
-						{!loading && orders.length === 0 ? (
-							<EmptyState
-								variant="orders"
-								title={
-									start || end || status || product
-										? "Tidak ada transaksi yang cocok"
-										: "Belum ada transaksi"
-								}
-								description={
-									start || end || status || product
-										? "Coba ubah atau kosongkan filter untuk melihat transaksi lain."
-										: "Pesanan yang dibuat kasir akan muncul di daftar ini."
-								}
-								action={
-									start || end || status || product ? (
-										<button
-											type="button"
-											onClick={() =>
-												patchSearch({
-													start: undefined,
-													end: undefined,
-													status: undefined,
-													product: undefined,
-												})
-											}
-											className="rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-bold text-[var(--sea-ink)] transition hover:bg-neutral-50"
-										>
-											Reset filter
-										</button>
-									) : null
-								}
-								size="sm"
-								surface="plain"
-								className="p-5"
-							/>
-						) : null}
-					</div>
-				</section>
-				<section className="min-w-0 self-start rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm xl:sticky xl:top-6">
+						</div>
+						<Separator />
+						<ScrollArea className="max-h-[62dvh] pr-1">
+							<div ref={listRef} className="space-y-2 pb-1">
+								{loading ? (
+									<div className="space-y-2">
+										{Array.from({ length: 5 }).map((_, i) => (
+											<Skeleton
+												key={i}
+												className="h-[76px] w-full rounded-2xl"
+											/>
+										))}
+									</div>
+								) : (
+									orders.map((order) => {
+										const active = selectedId === order.id;
+										const pay = paymentBadge(order);
+										return (
+											<button
+												key={order.id}
+												type="button"
+												onClick={() => selectOrder(active ? null : order.id)}
+												aria-pressed={active}
+												className={`w-full rounded-2xl border p-3.5 text-left transition outline-none ${
+													active
+														? "border-[#F97316]/40 bg-[#F97316]/5 ring-1 ring-[#F97316]/40"
+														: "border-neutral-100 bg-neutral-50/60 hover:border-neutral-200 hover:bg-neutral-50"
+												}`}
+											>
+												<span className="flex items-center justify-between gap-2">
+													<span className="font-bold">Pesanan #{order.id}</span>
+													<span className="flex items-center gap-1.5">
+														<Badge variant={statusBadgeVariant(order.status)}>
+															{statusLabel(order.status)}
+														</Badge>
+														<span
+															className={`inline-flex items-center rounded-3xl px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${pay.className}`}
+														>
+															{pay.label}
+														</span>
+													</span>
+												</span>
+												<span className="mt-1.5 flex items-end justify-between gap-2 text-sm">
+													<span className="text-xs text-muted-foreground">
+														{fmtDateTime(order.tanggal)} · {order.kasir}
+													</span>
+													<span className="font-bold whitespace-nowrap">
+														{fmtDecimalMoney(order.total)}
+													</span>
+												</span>
+											</button>
+										);
+									})
+								)}
+								{!loading && orders.length === 0 ? (
+									<EmptyState
+										variant="orders"
+										title={
+											hasFilter
+												? "Tidak ada transaksi yang cocok"
+												: "Belum ada transaksi"
+										}
+										description={
+											hasFilter
+												? "Coba ubah atau kosongkan filter untuk melihat transaksi lain."
+												: "Pesanan yang dibuat kasir akan muncul di daftar ini."
+										}
+										action={
+											hasFilter ? (
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={resetFilter}
+												>
+													Reset filter
+												</Button>
+											) : null
+										}
+										size="sm"
+										surface="plain"
+										className="p-5"
+									/>
+								) : null}
+							</div>
+						</ScrollArea>
+					</CardContent>
+				</Card>
+
+				<Card size="sm" className="min-w-0 xl:sticky xl:top-6">
 					{detailLoading ? (
-						<p className="text-sm text-neutral-500">Memuat detail…</p>
+						<CardContent className="space-y-3">
+							<Skeleton className="h-7 w-48" />
+							<Skeleton className="h-4 w-64" />
+							<Skeleton className="h-40 w-full rounded-2xl" />
+							<Skeleton className="h-24 w-full rounded-2xl" />
+						</CardContent>
 					) : !detail ? (
 						<EmptyState
 							variant="orders"
@@ -332,160 +432,186 @@ export function OrdersView() {
 						/>
 					) : (
 						<>
-							<div className="flex flex-wrap items-center justify-between gap-3">
+							<CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
 								<div>
-									<h2 className="text-xl font-bold">Pesanan #{detail.id}</h2>
-									<p className="mt-1 text-sm text-neutral-500">
+									<div className="flex flex-wrap items-center gap-2">
+										<CardTitle className="text-xl font-bold">
+											Pesanan #{detail.id}
+										</CardTitle>
+										<Badge variant={statusBadgeVariant(detail.status)}>
+											{statusLabel(detail.status)}
+										</Badge>
+									</div>
+									<CardDescription className="mt-1">
 										{fmtDateTime(detail.tanggal)} · Kasir {detail.kasir}
-									</p>
+										{detail.meja ? ` · ${detail.meja}` : ""}
+									</CardDescription>
 								</div>
-								<button
+								<Button
 									type="button"
+									variant="outline"
+									size="sm"
 									onClick={() => setInvoiceOpen(true)}
-									className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold"
 								>
-									Lihat billing
-								</button>
-							</div>
-							<div className="mt-4 overflow-x-auto">
-								<table className="w-full min-w-[500px] text-left text-sm">
-									<thead className="border-b border-neutral-100 text-xs text-neutral-500">
-										<tr>
-											<th className="py-2">Item</th>
-											<th className="py-2 text-right">Qty</th>
-											<th className="py-2 text-right">Harga</th>
-											<th className="py-2 text-right">Subtotal</th>
-										</tr>
-									</thead>
-									<tbody className="divide-y divide-neutral-100">
-										{detail.items.map((item) => (
-											<tr key={item.id}>
-												<td className="py-3">{item.name}</td>
-												<td className="py-3 text-right">{item.qty}</td>
-												<td className="py-3 text-right">
-													{fmtDecimalMoney(item.price)}
-												</td>
-												<td className="py-3 text-right">
-													{fmtDecimalMoney(item.subtotal)}
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-							<div className="mt-3 flex justify-between border-t border-neutral-100 pt-4 font-bold">
-								<span>Total</span>
-								<span>{fmtDecimalMoney(detail.total)}</span>
-							</div>
-							<div className="mt-4 rounded-xl bg-neutral-50 p-4">
-								<h3 className="font-bold">Pembayaran</h3>
-								<p className="mt-1 text-sm text-neutral-600">
-									{detail.paymentStatus === "lunas"
-										? "Lunas"
-										: detail.paymentStatus === "belum_lunas"
-											? `Belum lunas · tercatat ${fmtDecimalMoney(detail.paymentAmount ?? "0.00")}`
-											: "Belum ada pembayaran"}
-									{detail.change
-										? ` · kembalian ${fmtDecimalMoney(detail.change)}`
-										: ""}
-								</p>
-								{detail.status === "diproses" &&
-								detail.paymentStatus !== "lunas" ? (
-									<form
-										onSubmit={(event) => {
-											event.preventDefault();
-											if (busy) return;
-											recordPaymentMutation.mutate({
-												orderId: Number(detail.id),
-												method,
-												amount,
-											});
-										}}
-										className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[160px_1fr_auto]"
-									>
-										<div className="text-xs font-medium text-neutral-500">
-											Metode
-											<SearchSelect
-												value={method}
-												onChange={(value) =>
-													setMethod(
-														value === "non_tunai" ? "non_tunai" : "tunai",
-													)
-												}
-												disabled={detail.paymentStatus === "belum_lunas"}
-												options={[
-													{ value: "tunai", label: "Tunai" },
-													{ value: "non_tunai", label: "Non-tunai" },
-												]}
-												placeholder="Pilih metode"
-												searchPlaceholder="Cari metode…"
-												emptyText="Tidak ada metode yang cocok."
-												ariaLabel="Metode pembayaran"
-												className="mt-1 w-full"
-											/>
-										</div>
-										<label className="text-xs font-medium text-neutral-500">
-											Jumlah kumulatif diterima
-											<input
-												type="text"
-												inputMode="decimal"
-												value={amount}
-												onChange={(event) => setAmount(event.target.value)}
-												placeholder="Contoh: 50000"
-												className="mt-1 block w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900"
-											/>
-										</label>
-										<button
-											type="submit"
-											disabled={busy}
-											className="self-end rounded-lg bg-[#F97316] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+									<ReceiptText />
+									Billing
+								</Button>
+							</CardHeader>
+							<CardContent>
+								<div className="overflow-x-auto rounded-2xl border border-neutral-100">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Item</TableHead>
+												<TableHead className="text-right">Qty</TableHead>
+												<TableHead className="text-right">Harga</TableHead>
+												<TableHead className="text-right">Subtotal</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{detail.items.map((item) => (
+												<TableRow key={item.id}>
+													<TableCell className="font-medium">
+														{item.name}
+													</TableCell>
+													<TableCell className="text-right">
+														{item.qty}
+													</TableCell>
+													<TableCell className="text-right whitespace-nowrap">
+														{fmtDecimalMoney(item.price)}
+													</TableCell>
+													<TableCell className="text-right font-medium whitespace-nowrap">
+														{fmtDecimalMoney(item.subtotal)}
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+										<TableFooter>
+											<TableRow>
+												<TableCell colSpan={3}>Total</TableCell>
+												<TableCell className="text-right font-bold">
+													{fmtDecimalMoney(detail.total)}
+												</TableCell>
+											</TableRow>
+										</TableFooter>
+									</Table>
+								</div>
+
+								<div className="mt-3 rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-100 ring-inset">
+									<div className="flex flex-wrap items-center justify-between gap-2">
+										<h3 className="font-bold">Pembayaran</h3>
+										<span
+											className={`inline-flex items-center rounded-3xl px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${paymentBadge(detail).className}`}
 										>
-											Catat pembayaran
-										</button>
-									</form>
-								) : null}
-							</div>
-							{detail.status === "diproses" ? (
-								<div className="mt-4 flex flex-wrap gap-2">
-									{detail.paymentStatus === "lunas" ? (
-										<button
-											type="button"
-											disabled={busy}
-											onClick={() =>
-												setStatusMutation.mutate({
-													id: Number(detail.id),
-													status: "selesai",
-												})
-											}
-											className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+											{paymentBadge(detail).label}
+										</span>
+									</div>
+									<p className="mt-1 text-sm text-muted-foreground">
+										{detail.paymentStatus === "lunas"
+											? `Lunas · ${detail.paymentMethod === "non_tunai" ? "non-tunai" : "tunai"} ${fmtDecimalMoney(detail.paymentAmount ?? "0.00")}`
+											: detail.paymentStatus === "belum_lunas"
+												? `Terkumpul ${fmtDecimalMoney(detail.paymentAmount ?? "0.00")} dari ${fmtDecimalMoney(detail.total)}`
+												: `Belum ada pembayaran · total ${fmtDecimalMoney(detail.total)}`}
+										{detail.change
+											? ` · kembalian ${fmtDecimalMoney(detail.change)}`
+											: ""}
+									</p>
+									{detail.status === "diproses" &&
+									detail.paymentStatus !== "lunas" ? (
+										<form
+											onSubmit={(event) => {
+												event.preventDefault();
+												if (busy) return;
+												recordPaymentMutation.mutate({
+													orderId: Number(detail.id),
+													method,
+													amount,
+												});
+											}}
+											className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[140px_1fr_auto] sm:items-end"
 										>
-											Tandai selesai
-										</button>
-									) : null}
-									{detail.paymentStatus !== "lunas" ? (
-										<button
-											type="button"
-											disabled={busy}
-											onClick={() =>
-												setStatusMutation.mutate({
-													id: Number(detail.id),
-													status: "dibatalkan",
-												})
-											}
-											className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 disabled:opacity-50"
-										>
-											Batalkan pesanan
-										</button>
+											<div>
+												<Label className="mb-1.5 block text-xs">Metode</Label>
+												<SearchSelect
+													value={method}
+													onChange={(value) =>
+														setMethod(
+															value === "non_tunai" ? "non_tunai" : "tunai",
+														)
+													}
+													disabled={detail.paymentStatus === "belum_lunas"}
+													options={[
+														{ value: "tunai", label: "Tunai" },
+														{ value: "non_tunai", label: "Non-tunai" },
+													]}
+													placeholder="Pilih metode"
+													searchPlaceholder="Cari metode…"
+													emptyText="Tidak ada metode yang cocok."
+													ariaLabel="Metode pembayaran"
+													className="w-full"
+												/>
+											</div>
+											<div>
+												<Label className="mb-1.5 block text-xs">
+													Jumlah diterima
+												</Label>
+												<Input
+													type="text"
+													inputMode="decimal"
+													value={amount}
+													onChange={(event) => setAmount(event.target.value)}
+													placeholder="Contoh: 50000"
+												/>
+											</div>
+											<Button type="submit" disabled={busy}>
+												Catat pembayaran
+											</Button>
+										</form>
 									) : null}
 								</div>
-							) : (
-								<p className="mt-4 text-sm text-neutral-500">
-									Status pesanan: {detail.status}.
-								</p>
-							)}
+
+								{detail.status === "diproses" ? (
+									<div className="mt-4 flex flex-wrap gap-2">
+										{detail.paymentStatus === "lunas" ? (
+											<Button
+												type="button"
+												disabled={busy}
+												onClick={() =>
+													setStatusMutation.mutate({
+														id: Number(detail.id),
+														status: "selesai",
+													})
+												}
+												className="bg-emerald-700 text-white hover:bg-emerald-700/90"
+											>
+												Tandai selesai
+											</Button>
+										) : null}
+										{detail.paymentStatus !== "lunas" ? (
+											<Button
+												type="button"
+												variant="destructive"
+												disabled={busy}
+												onClick={() =>
+													setStatusMutation.mutate({
+														id: Number(detail.id),
+														status: "dibatalkan",
+													})
+												}
+											>
+												Batalkan pesanan
+											</Button>
+										) : null}
+									</div>
+								) : (
+									<p className="mt-4 text-sm text-muted-foreground">
+										Status pesanan: {statusLabel(detail.status)}.
+									</p>
+								)}
+							</CardContent>
 						</>
 					)}
-				</section>
+				</Card>
 			</div>
 			{invoiceOpen && detail ? (
 				<InvoiceModal
