@@ -21,10 +21,10 @@ function shortLabel(nama: string): string {
 }
 
 function isSameTable(
-	table: { nama: string; lantai: string } | null,
+	table: { id: number } | null,
 	row: PublicMeja,
 ): boolean {
-	return table?.nama === row.nama;
+	return table?.id === row.id;
 }
 
 function MejaPlan({
@@ -36,16 +36,20 @@ function MejaPlan({
 	selected: boolean;
 	onSelect: () => void;
 }) {
+	const disabled = meja.terisi && !selected;
 	return (
 		<button
 			type="button"
 			onClick={onSelect}
+			disabled={disabled}
 			aria-pressed={selected}
-			aria-label={`Pilih ${meja.nama}`}
+			aria-label={disabled ? `${meja.nama} terisi` : `Pilih ${meja.nama}`}
 			className={`relative mx-auto flex h-36 w-36 items-center justify-center rounded-2xl transition outline-none ${
-				selected
-					? "ring-2 ring-[#F97316] ring-offset-2 ring-offset-white"
-					: "hover:ring-2 hover:ring-neutral-200 hover:ring-offset-2 hover:ring-offset-white"
+				disabled
+					? "cursor-not-allowed opacity-50"
+					: selected
+						? "ring-2 ring-[#F97316] ring-offset-2 ring-offset-white"
+						: "hover:ring-2 hover:ring-neutral-200 hover:ring-offset-2 hover:ring-offset-white"
 			}`}
 		>
 			<span
@@ -125,7 +129,9 @@ export function PublicMejaView() {
 	}
 
 	function selectTable(row: PublicMeja) {
+		if (row.terisi) return;
 		setTable({
+			id: row.id,
 			nama: row.nama,
 			lantai: row.lantai,
 			tamu: isSameTable(table, row)
@@ -140,11 +146,11 @@ export function PublicMejaView() {
 			? (table?.tamu ?? DEFAULT_GUEST_COUNT)
 			: DEFAULT_GUEST_COUNT;
 		const next = Math.min(Math.max(current + delta, 1), 20);
-		setTable({ nama: row.nama, lantai: row.lantai, tamu: next });
+		setTable({ id: row.id, nama: row.nama, lantai: row.lantai, tamu: next });
 	}
 
 	function lanjutkan() {
-		if (!selectedRow) return;
+		if (!selectedRow || selectedRow.terisi) return;
 		void navigate({ to: "/menu" });
 	}
 
@@ -158,7 +164,7 @@ export function PublicMejaView() {
 					action={
 						<button
 							type="button"
-							disabled={!hydrated || !selectedRow}
+							disabled={!hydrated || !selectedRow || selectedRow.terisi}
 							onClick={lanjutkan}
 							className="w-full rounded-xl bg-[#F97316] px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
 						>
@@ -222,6 +228,20 @@ export function PublicMejaView() {
 									onSelect={() => selectTable(meja)}
 								/>
 								<p className="mt-2 text-sm font-semibold">{meja.nama}</p>
+								<span
+									className={`mt-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+										meja.terisi
+											? "bg-red-100 text-red-700"
+											: "bg-emerald-100 text-emerald-700"
+									}`}
+								>
+									{meja.terisi ? "Terisi" : "Kosong"}
+								</span>
+								{meja.terisi && meja.orderId !== null ? (
+									<p className="mt-1 text-xs text-neutral-500">
+										Pesanan #{meja.orderId}
+									</p>
+								) : null}
 								<div className="mt-2 flex items-center gap-3">
 									<button
 										type="button"

@@ -45,7 +45,7 @@ export function PublicPembayaranView() {
 					productId: item.productId,
 					quantity: item.quantity,
 				})),
-				meja: meja.nama,
+				mejaId: meja.id,
 				tamu: meja.tamu,
 				paymentMethod,
 			},

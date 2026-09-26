@@ -16,6 +16,7 @@ export const publicMejaQueryOptions = () =>
 	queryOptions({
 		queryKey: qk.tables.publicList,
 		queryFn: listPublicMeja,
+		refetchInterval: 10_000,
 	});
 
 export const publicOrderQueryOptions = (id: string | number) =>

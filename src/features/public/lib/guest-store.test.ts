@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe("guest Zustand store", () => {
 	test("owns table, cart, and order history through typed actions", () => {
-		const table = { nama: "Meja 1", lantai: "Lantai 1", tamu: 2 };
+		const table = { id: 1, nama: "Meja 1", lantai: "Lantai 1", tamu: 2 };
 		const order = { id: 12, tanggal: "2026-09-25", meja: table.nama };
 
 		useGuestStore.getState().setTable(table);
@@ -47,6 +47,7 @@ describe("guest Zustand store", () => {
 
 	test("defaults an invalid guest count to one", () => {
 		useGuestStore.getState().setTable({
+			id: 1,
 			nama: "Meja 1",
 			lantai: "Lantai 1",
 			tamu: Number.NaN,
@@ -57,12 +58,14 @@ describe("guest Zustand store", () => {
 
 	test("clears the cart when the selected table changes", () => {
 		useGuestStore.getState().setTable({
+			id: 1,
 			nama: "Meja 1",
 			lantai: "Lantai 1",
 			tamu: 1,
 		});
 		useGuestStore.getState().addToCart(item);
 		useGuestStore.getState().setTable({
+			id: 2,
 			nama: "Meja 2",
 			lantai: "Lantai 1",
 			tamu: 1,

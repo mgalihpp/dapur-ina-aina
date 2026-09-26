@@ -8,6 +8,7 @@ import {
 export const DEFAULT_GUEST_COUNT = 1;
 
 export type GuestTable = {
+	id: number;
 	nama: string;
 	lantai: string;
 	tamu: number;
@@ -90,6 +91,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeTable(value: unknown): GuestTable | null {
 	if (!isRecord(value)) return null;
+	const id = Number(value.id);
+	if (!Number.isInteger(id) || id <= 0) return null;
 	if (typeof value.nama !== "string" || !value.nama.trim()) return null;
 	const lantai =
 		typeof value.lantai === "string" && value.lantai.trim()
@@ -99,7 +102,7 @@ function normalizeTable(value: unknown): GuestTable | null {
 		typeof value.tamu === "number" && Number.isInteger(value.tamu)
 			? Math.min(Math.max(value.tamu, 1), 20)
 			: DEFAULT_GUEST_COUNT;
-	return { nama: value.nama.trim(), lantai, tamu };
+	return { id, nama: value.nama.trim(), lantai, tamu };
 }
 
 function normalizeCartItem(value: unknown): GuestCartItem | null {
@@ -212,7 +215,7 @@ export const useGuestStore = create<GuestStore>()(
 				set((state) => {
 					const nextTable = normalizeTable(table);
 					const tableChanged =
-						nextTable === null || state.table?.nama !== nextTable.nama;
+						nextTable === null || state.table?.id !== nextTable.id;
 					return {
 						table: nextTable,
 						...(tableChanged ? { cart: [] } : {}),
