@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
+import { MejaPlan } from "@/features/shared/components/MejaPlan";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicMeja } from "@/server/public-functions";
 import {
@@ -15,71 +16,8 @@ import {
 import { publicMejaQueryOptions } from "../queries";
 import { PublicOrderSummary, PublicPageLayout } from "./PublicLayout";
 
-function shortLabel(nama: string): string {
-	const match = nama.match(/(\d+)\s*$/);
-	return match?.[1] ?? nama.slice(0, 4);
-}
-
-function isSameTable(
-	table: { id: number } | null,
-	row: PublicMeja,
-): boolean {
+function isSameTable(table: { id: number } | null, row: PublicMeja): boolean {
 	return table?.id === row.id;
-}
-
-function MejaPlan({
-	meja,
-	selected,
-	onSelect,
-}: {
-	meja: PublicMeja;
-	selected: boolean;
-	onSelect: () => void;
-}) {
-	const disabled = meja.terisi && !selected;
-	return (
-		<button
-			type="button"
-			onClick={onSelect}
-			disabled={disabled}
-			aria-pressed={selected}
-			aria-label={disabled ? `${meja.nama} terisi` : `Pilih ${meja.nama}`}
-			className={`relative mx-auto flex h-36 w-36 items-center justify-center rounded-2xl transition outline-none ${
-				disabled
-					? "cursor-not-allowed opacity-50"
-					: selected
-						? "ring-2 ring-[#F97316] ring-offset-2 ring-offset-white"
-						: "hover:ring-2 hover:ring-neutral-200 hover:ring-offset-2 hover:ring-offset-white"
-			}`}
-		>
-			<span
-				aria-hidden
-				className="absolute top-1 left-1/2 h-7 w-10 -translate-x-1/2 rounded-md border border-neutral-300 bg-white"
-			/>
-			<span
-				aria-hidden
-				className="absolute bottom-1 left-1/2 h-7 w-10 -translate-x-1/2 rounded-md border border-neutral-300 bg-white"
-			/>
-			<span
-				aria-hidden
-				className="absolute top-1/2 left-1 h-10 w-7 -translate-y-1/2 rounded-md border border-neutral-300 bg-white"
-			/>
-			<span
-				aria-hidden
-				className="absolute top-1/2 right-1 h-10 w-7 -translate-y-1/2 rounded-md border border-neutral-300 bg-white"
-			/>
-			<span
-				aria-hidden
-				className={`flex h-20 w-20 items-center justify-center rounded-full border-2 text-lg font-bold ${
-					selected
-						? "border-[#F97316] bg-[#F97316]/10 text-[#F97316]"
-						: "border-neutral-300 bg-white text-neutral-700"
-				}`}
-			>
-				{shortLabel(meja.nama)}
-			</span>
-		</button>
-	);
 }
 
 export function PublicMejaView() {
@@ -223,8 +161,14 @@ export function PublicMejaView() {
 						return (
 							<div key={meja.id} className="flex flex-col items-center">
 								<MejaPlan
-									meja={meja}
-									selected={selected}
+									nama={meja.nama}
+									label={
+										meja.terisi && !selected
+											? `${meja.nama} terisi`
+											: `Pilih ${meja.nama}`
+									}
+									disabled={meja.terisi && !selected}
+									ring={selected ? "orange" : null}
 									onSelect={() => selectTable(meja)}
 								/>
 								<p className="mt-2 text-sm font-semibold">{meja.nama}</p>

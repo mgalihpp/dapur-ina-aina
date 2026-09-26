@@ -175,7 +175,7 @@ async function seedCategories(): Promise<Map<string, number>> {
 	return ids;
 }
 
-async function seedMeja(): Promise<void> {
+async function seedMeja(): Promise<Map<string, number>> {
 	const plan: { nama: string; lantai: string }[] = [
 		...Array.from({ length: 5 }, (_, i) => ({
 			nama: `Meja ${i + 1}`,
@@ -199,6 +199,8 @@ async function seedMeja(): Promise<void> {
 	console.log(
 		"meja ready: Meja 1..Meja 5 (Lantai 1), Meja 6..Meja 8 (Lantai 2)",
 	);
+	const rows = await prisma.meja.findMany({ select: { id: true, nama: true } });
+	return new Map(rows.map((r) => [r.nama, r.id]));
 }
 
 async function seedProducts(kategoriIds: Map<string, number>): Promise<void> {
@@ -271,6 +273,8 @@ type SeedOrder = {
 	status: "diproses" | "selesai" | "dibatalkan";
 	items: SeedItem[];
 	bayar?: { metode: "tunai" | "non_tunai"; lunas: boolean };
+	meja?: string;
+	tamu?: number;
 };
 
 // Pesanan contoh tersebar 4 minggu ke belakang agar dasbor & laporan ada isinya.
@@ -359,11 +363,15 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Es Teh Manis", jumlah: 1 },
 		],
 		bayar: { metode: "tunai", lunas: false },
+		meja: "Meja 1",
+		tamu: 2,
 	},
 	{
 		hariLalu: 0,
 		status: "diproses",
 		items: [{ nama: "Jus Alpukat", jumlah: 1 }],
+		meja: "Meja 2",
+		tamu: 1,
 	},
 	{
 		hariLalu: 2,
@@ -379,7 +387,10 @@ function atNoon(daysAgo: number): Date {
 	return d;
 }
 
-async function seedOrders(kasirId: string): Promise<void> {
+async function seedOrders(
+	kasirId: string,
+	mejaIds: Map<string, number>,
+): Promise<void> {
 	const existing = await prisma.pesanan.count();
 	if (existing > 0) {
 		console.log(`orders kept: ${existing} sudah ada, seed dilewati`);
@@ -407,8 +418,16 @@ async function seedOrders(kasirId: string): Promise<void> {
 				(sum, line) => sum.plus(line.subtotal),
 				new Prisma.Decimal(0),
 			);
+			const mejaId = o.meja ? mejaIds.get(o.meja) ?? null : null;
 			const pesanan = await tx.pesanan.create({
-				data: { userId: kasirId, tanggal, total, status: o.status },
+				data: {
+					userId: kasirId,
+					tanggal,
+					total,
+					status: o.status,
+					mejaId,
+					tamu: o.tamu ?? null,
+				},
 			});
 			for (const x of lines) {
 				await tx.detailPesanan.create({
@@ -542,11 +561,11 @@ const KASIR_PASSWORD = process.env["KASIR_PASSWORD"] ?? "Kasir123!";
 
 async function main(): Promise<void> {
 	const kategoriIds = await seedCategories();
-	await seedMeja();
+	const mejaIds = await seedMeja();
 	await seedProducts(kategoriIds);
 	await seedAdmin();
 	const kasirId = await seedKasir();
-	await seedOrders(kasirId);
+	await seedOrders(kasirId, mejaIds);
 	await seedLaporan();
 	if (!process.env["ADMIN_PASSWORD"]) {
 		console.warn(
