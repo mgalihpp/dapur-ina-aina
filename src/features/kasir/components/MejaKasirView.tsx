@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSetOrderStatus } from "@/features/orders/mutations";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { TableIcon } from "@/features/shared/components/table-icon";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { kasirMejaOccupancyOptions } from "../queries";
 
@@ -104,8 +103,7 @@ export function MejaKasirView() {
 									row.terisi ? "border-red-200" : "border-neutral-100"
 								}`}
 							>
-								<span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-									<TableIcon className="size-4" />
+								<span className="text-xs text-muted-foreground">
 									{row.lantai}
 								</span>
 								<span
