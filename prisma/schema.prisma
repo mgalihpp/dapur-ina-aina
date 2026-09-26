@@ -127,7 +127,8 @@ model Pesanan {
   tanggal    DateTime        @db.Date
   total      Decimal         @default(0) @db.Decimal(10, 2)
   status     StatusPesanan   @default(diproses)
-  meja       String?         @db.VarChar(20)
+  mejaId     Int?
+  meja       Meja?           @relation(fields: [mejaId], references: [id], onDelete: SetNull)
   tamu       Int?
   detail     DetailPesanan[]
   pembayaran Pembayaran?
@@ -135,6 +136,7 @@ model Pesanan {
   @@index([userId])
   @@index([tanggal])
   @@index([status])
+  @@index([mejaId])
   @@map("tb_pesanan")
 }
 
@@ -179,9 +181,10 @@ model Stok {
 }
 
 model Meja {
-  id     Int    @id @default(autoincrement())
-  nama   String @unique @db.VarChar(20)
-  lantai String @default("Lantai 1") @db.VarChar(20)
+  id      Int       @id @default(autoincrement())
+  nama    String    @unique @db.VarChar(20)
+  lantai  String    @default("Lantai 1") @db.VarChar(20)
+  pesanan Pesanan[]
 
   @@map("tb_meja")
 }
