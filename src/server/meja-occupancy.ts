@@ -12,42 +12,46 @@ type OccupancySource = {
 	id: number;
 	nama: string;
 	lantai: string;
+	terisi: boolean;
 	pesanan: { id: number }[];
 };
 
+/**
+ * Okupansi = flag eksplisit `terisi` di meja, BUKAN status pesanan.
+ * Pesanan `selesai` tidak membebaskan meja; meja bebas hanya lewat aksi
+ * eksplisit kasir/admin ("Bebaskan meja") saat tamu sudah pergi.
+ */
 export function toOccupancy(row: OccupancySource): MejaOccupancy {
-	const orderId = row.pesanan[0]?.id ?? null;
 	return {
 		id: row.id,
 		nama: row.nama,
 		lantai: row.lantai,
-		terisi: orderId !== null,
-		orderId,
+		terisi: row.terisi,
+		orderId: row.pesanan[0]?.id ?? null,
 	};
 }
 
-export const occupancyInclude = {
+export const mejaOccupancySelect = {
+	id: true,
+	nama: true,
+	lantai: true,
+	terisi: true,
 	pesanan: {
 		where: { status: "diproses" as const },
 		select: { id: true },
 		take: 1,
 	},
-} satisfies Prisma.MejaInclude;
+} satisfies Prisma.MejaSelect;
 
-export async function assertMejaFree(
+/** Tandai meja terisi saat pesanan dibuat. Boleh banyak pesanan per meja. */
+export async function markMejaTerisi(
 	tx: Prisma.TransactionClient,
 	mejaId: number,
 ): Promise<void> {
-	const meja = await tx.meja.findUnique({
+	const meja = await tx.meja.update({
 		where: { id: mejaId },
+		data: { terisi: true },
 		select: { id: true },
 	});
 	if (!meja) throw new Error("Meja tidak ditemukan.");
-	const clash = await tx.$queryRaw<{ id: number }[]>`
-		SELECT id FROM tb_pesanan
-		WHERE mejaId = ${mejaId} AND status = 'diproses'
-		LIMIT 1
-		FOR UPDATE
-	`;
-	if (clash.length > 0) throw new Error("Meja sudah terisi.");
 }

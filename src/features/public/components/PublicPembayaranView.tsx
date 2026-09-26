@@ -22,6 +22,7 @@ export function PublicPembayaranView() {
 	const hydrated = useGuestStore(selectGuestHydrated);
 	const addOrder = useGuestStore((state) => state.addOrder);
 	const clearCart = useGuestStore((state) => state.clearCart);
+	const setTable = useGuestStore((state) => state.setTable);
 	const createOrderMutation = useCreatePublicOrderMutation();
 	const busy = createOrderMutation.isPending;
 	const error = createOrderMutation.isError
@@ -57,6 +58,7 @@ export function PublicPembayaranView() {
 						meja: meja.nama,
 					});
 					clearCart();
+					setTable(null);
 					void navigate({
 						to: "/pesanan/$orderId",
 						params: { orderId: String(order.id) },

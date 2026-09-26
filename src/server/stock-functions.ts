@@ -22,7 +22,8 @@ export const getStockOverview = createServerFn({ method: "GET" }).handler(
 			name: product.namaProduk,
 			category: product.kategori.namaKategori,
 			stock: product.stok,
-			low: product.stok <= 5,
+			stokMinimal: product.stokMinimal,
+			low: product.stok <= product.stokMinimal,
 			price: product.harga.toFixed(2),
 		}));
 	},

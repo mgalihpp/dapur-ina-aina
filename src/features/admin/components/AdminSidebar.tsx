@@ -4,9 +4,9 @@ import {
 	Boxes,
 	ClipboardList,
 	LayoutGrid,
-	Sandwich,
 	Tags,
 	Users,
+	UtensilsCrossed,
 } from "lucide-react";
 import { useSignOutMutation } from "@/features/auth/mutations";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
@@ -45,8 +45,8 @@ export function AdminSidebar({ active = "dashboard" }: AdminSidebarProps) {
 			to: "/admin/orders",
 		},
 		{
-			icon: Sandwich,
-			label: "Produk",
+			icon: UtensilsCrossed,
+			label: "Menu",
 			active: active === "menu",
 			to: "/admin/menu",
 		},

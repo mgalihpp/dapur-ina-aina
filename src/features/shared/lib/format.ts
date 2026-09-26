@@ -24,6 +24,16 @@ export function fmtDecimalMoney(value: string): string {
 
 export const fmtRp = fmtMoney;
 
+export function fmtDate(value: string | Date): string {
+	const date = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(date.getTime())) return String(value);
+	return new Intl.DateTimeFormat("id-ID", {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+	}).format(date);
+}
+
 export function fmtDateTime(value: string | Date): string {
 	const date = value instanceof Date ? value : new Date(value);
 	if (Number.isNaN(date.getTime())) return String(value);
@@ -35,5 +45,5 @@ export function fmtDateTime(value: string | Date): string {
 		minute: "2-digit",
 		hour12: false,
 	}).format(date);
-	return formatted.replace(".", ":");
+	return formatted.replaceAll(".", ":");
 }

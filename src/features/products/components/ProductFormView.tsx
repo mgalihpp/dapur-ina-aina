@@ -19,6 +19,7 @@ type Fields = {
 	kategoriId: string;
 	price: string;
 	stok: string;
+	stokMinimal: string;
 	gambar: string;
 };
 
@@ -50,6 +51,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		kategoriId: initial ? String(initial.kategoriId) : "",
 		price: initial ? String(initial.price) : "",
 		stok: initial ? String(initial.quantity) : "",
+		stokMinimal: initial ? String(initial.stokMinimal) : "5",
 		gambar: initial?.image ?? "",
 	}));
 	const [picker, setPicker] = useState<ImagePickerState>(() =>
@@ -61,6 +63,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		name?: string;
 		price?: string;
 		stok?: string;
+		stokMinimal?: string;
 		kategori?: string;
 		submit?: string;
 	}>({});
@@ -79,7 +82,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 	);
 
 	const preview = picker.kind === "pickerClosed" ? null : picker.preview;
-	const title = mode === "add" ? "Tambah Produk" : "Ubah Produk";
+	const title = mode === "add" ? "Tambah Menu" : "Ubah Menu";
 
 	function updateField<Key extends keyof Fields>(key: Key, value: Fields[Key]) {
 		setFields((prev) => ({ ...prev, [key]: value }));
@@ -128,7 +131,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 	function handleSubmit(event: FormEvent) {
 		event.preventDefault();
 		const next: typeof errors = {};
-		if (!fields.name.trim()) next.name = "Nama produk wajib diisi.";
+		if (!fields.name.trim()) next.name = "Nama menu wajib diisi.";
 		const price = fields.price.trim();
 		if (!/^\d{1,8}(\.\d{1,2})?$/.test(price) || Number(price) <= 0) {
 			next.price = "Harga harus maksimal 2 angka desimal dan lebih dari 0.";
@@ -137,6 +140,14 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		if (!fields.stok.trim() || !Number.isInteger(stok) || stok < 0) {
 			next.stok = "Stok harus bilangan bulat >= 0.";
 		}
+		const stokMinimal = Number(fields.stokMinimal);
+		if (
+			!fields.stokMinimal.trim() ||
+			!Number.isInteger(stokMinimal) ||
+			stokMinimal < 0
+		) {
+			next.stokMinimal = "Stok minimal harus bilangan bulat >= 0.";
+		}
 		if (!fields.kategoriId) next.kategori = "Kategori wajib dipilih.";
 		setErrors(next);
 		if (Object.keys(next).length > 0) return;
@@ -144,6 +155,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		const details = {
 			namaProduk: fields.name.trim(),
 			harga: price,
+			stokMinimal,
 			kategoriId: Number(fields.kategoriId),
 			gambar:
 				fields.gambar.trim() ||
@@ -153,7 +165,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 		const onError = (cause: unknown) =>
 			setErrors((p) => ({
 				...p,
-				submit: mutationErrorMessage(cause, "Gagal menyimpan produk"),
+				submit: mutationErrorMessage(cause, "Gagal menyimpan menu"),
 			}));
 
 		if (mode === "add") {
@@ -161,7 +173,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 			return;
 		}
 		if (!initial) {
-			setErrors((p) => ({ ...p, submit: "Produk tidak ditemukan" }));
+			setErrors((p) => ({ ...p, submit: "Menu tidak ditemukan" }));
 			return;
 		}
 		updateProduct.mutate(
@@ -176,7 +188,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 			<div className="mt-4 rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
 				<button
 					type="button"
-					aria-label="Kembali ke daftar produk"
+					aria-label="Kembali ke daftar menu"
 					onClick={() => navigate({ to: "/admin/menu" })}
 					className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F97316] text-white transition hover:bg-[#ea6a0a]"
 				>
@@ -213,7 +225,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 								htmlFor="product-name"
 								className="mb-1 block text-[13px] font-bold text-neutral-900"
 							>
-								Nama Produk :
+								Nama Menu :
 							</label>
 							<input
 								id="product-name"
@@ -295,6 +307,33 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 								)}
 							</div>
 						) : null}
+						<div>
+							<label
+								htmlFor="product-stok-minimal"
+								className="mb-1 block text-[13px] font-bold text-neutral-900"
+							>
+								Stok minimal :
+							</label>
+							<input
+								id="product-stok-minimal"
+								type="text"
+								inputMode="numeric"
+								value={fields.stokMinimal}
+								onChange={(event) =>
+									updateField("stokMinimal", event.target.value)
+								}
+								placeholder="5"
+								className={fieldClass(Boolean(errors.stokMinimal))}
+							/>
+							{errors.stokMinimal && (
+								<p className="mt-1 text-xs text-red-500">
+									{errors.stokMinimal}
+								</p>
+							)}
+							<p className="mt-1 text-xs text-neutral-500">
+								Peringatan stok menipis muncul saat stok mencapai angka ini.
+							</p>
+						</div>
 						<div className="md:col-span-2">
 							<label
 								htmlFor="product-gambar"
@@ -330,7 +369,7 @@ export function ProductFormView({ mode, initial }: ProductFormViewProps) {
 							disabled={saving}
 							className="rounded-lg bg-[#F97316] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a] disabled:opacity-50"
 						>
-							{saving ? "Menyimpan…" : "Simpan Produk"}
+							{saving ? "Menyimpan…" : "Simpan Menu"}
 						</button>
 					</div>
 				</form>

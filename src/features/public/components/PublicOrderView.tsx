@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ReceiptText } from "lucide-react";
 import { useState } from "react";
 import QRCode from "react-qr-code";
+import { BillingSheet } from "@/features/shared/components/BillingSheet";
 import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicOrderDetail } from "@/server/public-functions";
@@ -19,14 +20,6 @@ function paymentStatusLabel(
 ): string {
 	if (status === "lunas") return "Lunas";
 	if (status === "belum_lunas") return "Belum lunas";
-	return "Menunggu kasir";
-}
-
-function paymentMethodLabel(
-	method: PublicOrderDetail["paymentMethod"],
-): string {
-	if (method === "tunai") return "Tunai";
-	if (method === "non_tunai") return "QRIS";
 	return "Menunggu kasir";
 }
 
@@ -54,14 +47,6 @@ function QrisPanel({ orderId, total }: { orderId: string; total: string }) {
 			</div>
 		</section>
 	);
-}
-
-function toInvoiceOrder(order: PublicOrderDetail) {
-	return {
-		...order,
-		kasir: "-",
-		paymentDate: null,
-	};
 }
 
 export function PublicOrderView({ orderId }: { orderId: string }) {
@@ -131,7 +116,7 @@ export function PublicOrderView({ orderId }: { orderId: string }) {
 						className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold"
 					>
 						<ReceiptText className="size-4" aria-hidden="true" />
-						{order.paymentStatus === "lunas" ? "Lihat struk" : "Lihat billing"}
+						Lihat billing
 					</button>
 				</div>
 
@@ -230,82 +215,33 @@ function PublicInvoiceModal({
 	order: PublicOrderDetail;
 	onClose: () => void;
 }) {
-	const view = toInvoiceOrder(order);
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 print:static print:block print:p-0">
+		<div className="fixed inset-0 z-50 overflow-y-auto print:static print:overflow-visible print:p-0">
 			<button
 				type="button"
-				aria-label="Tutup struk"
+				aria-label="Tutup billing"
 				onClick={onClose}
-				className="absolute inset-0 cursor-default bg-black/40 print:hidden"
+				className="fixed inset-0 cursor-default bg-black/40 print:hidden"
 			/>
-			<article className="relative max-h-full w-full max-w-[420px] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl print:max-h-none print:max-w-none print:rounded-none print:shadow-none">
-				<header className="text-center">
-					<h2 className="text-xl font-bold">Dapur Ina Aina</h2>
-					<p className="mt-1 text-sm text-neutral-500">
-						Billing pesanan #{view.id}
-					</p>
-				</header>
-				<dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 border-y border-dashed border-neutral-300 py-4 text-sm">
-					<dt className="text-neutral-500">Tanggal</dt>
-					<dd className="text-right font-medium">
-						{fmtDateTime(view.tanggal)}
-					</dd>
-					<dt className="text-neutral-500">Status pesanan</dt>
-					<dd className="text-right font-medium">
-						{orderStatusLabel(view.status)}
-					</dd>
-					<dt className="text-neutral-500">Status pembayaran</dt>
-					<dd className="text-right font-medium">
-						{paymentStatusLabel(view.paymentStatus)}
-					</dd>
-					<dt className="text-neutral-500">Metode</dt>
-					<dd className="text-right font-medium">
-						{paymentMethodLabel(view.paymentMethod)}
-					</dd>
-				</dl>
-				<table className="mt-4 w-full text-sm">
-					<thead>
-						<tr className="text-left text-xs text-neutral-500">
-							<th className="pb-2 text-left">Item</th>
-							<th className="pb-2 text-right">Qty</th>
-							<th className="pb-2 text-right">Harga</th>
-							<th className="pb-2 text-right">Subtotal</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-neutral-100">
-						{view.items.map((item) => (
-							<tr key={item.id}>
-								<td className="py-2 pr-2">{item.name}</td>
-								<td className="py-2 text-right">{item.qty}</td>
-								<td className="py-2 text-right">
-									{fmtDecimalMoney(item.price)}
-								</td>
-								<td className="py-2 text-right">
-									{fmtDecimalMoney(item.subtotal)}
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-				<dl className="mt-4 space-y-2 border-t border-dashed border-neutral-300 pt-4 text-sm">
-					<div className="flex justify-between font-bold">
-						<dt>Total</dt>
-						<dd>{fmtDecimalMoney(view.total)}</dd>
-					</div>
-					{view.paymentAmount ? (
-						<div className="flex justify-between">
-							<dt>Jumlah dibayar</dt>
-							<dd>{fmtDecimalMoney(view.paymentAmount)}</dd>
-						</div>
-					) : null}
-					{view.change ? (
-						<div className="flex justify-between">
-							<dt>Kembalian</dt>
-							<dd>{fmtDecimalMoney(view.change)}</dd>
-						</div>
-					) : null}
-				</dl>
+			<div className="pointer-events-none relative flex min-h-full items-start justify-center p-4 print:block print:p-0">
+			<article className="pointer-events-auto relative w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-xl print:max-h-none print:max-w-none print:rounded-none print:shadow-none">
+				<BillingSheet
+					data={{
+						id: order.id,
+						tanggal: order.tanggal,
+						kasir: "Mandiri",
+						mejaNama: order.meja,
+						tamu: order.tamu,
+						status: order.status,
+						paymentStatus: order.paymentStatus,
+						paymentMethod: order.paymentMethod,
+						paymentAmount: order.paymentAmount,
+						paymentDate: null,
+						change: order.change,
+						total: order.total,
+						items: order.items,
+					}}
+				/>
 				<div className="mt-6 flex justify-center print:hidden">
 					<button
 						type="button"
@@ -319,6 +255,7 @@ function PublicInvoiceModal({
 					</button>
 				</div>
 			</article>
+			</div>
 		</div>
 	);
 }

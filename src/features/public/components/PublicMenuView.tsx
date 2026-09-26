@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { fmtDecimalMoney } from "@/features/shared/lib/format";
+import { MenuCard } from "@/features/shared/components/MenuCard";
 import { queryErrorMessage } from "@/lib/query-errors";
 import type { PublicCatalogProduct } from "@/server/public-functions";
 import {
@@ -229,58 +229,30 @@ export function PublicMenuView() {
 					/>
 				)
 			) : (
-				<div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+				<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
 					{visibleProducts.map((product) => {
 						const quantity = cartByProduct.get(product.id)?.quantity ?? 0;
 						return (
-							<article
+							<MenuCard
 								key={product.id}
-								className="flex gap-3 rounded-2xl border border-neutral-100 bg-white p-3 shadow-sm"
-							>
-								<img
-									src={product.image}
-									alt=""
-									className="h-20 w-20 shrink-0 rounded-xl bg-neutral-100 object-cover"
-								/>
-								<div className="min-w-0 flex-1">
-									<p className="flex items-center gap-2 truncate font-semibold">
-										<span className="truncate">{product.name}</span>
-										{product.soldOut ? (
-											<span className="shrink-0 rounded-full bg-neutral-900 px-2 py-0.5 text-[11px] font-bold text-white">
-												Habis
-											</span>
-										) : null}
-									</p>
-									<p className="text-xs text-neutral-500">
-										{product.category} · stok {product.stock}
-									</p>
-									<p className="mt-1 text-sm font-bold text-orange-700">
-										{fmtDecimalMoney(product.price)}
-									</p>
-									<div className="mt-2 flex items-center gap-2">
-										<button
-											type="button"
-											aria-label={`Kurangi ${product.name}`}
-											onClick={() => decreaseProduct(product, quantity - 1)}
-											className="h-7 w-7 rounded-md border border-neutral-200"
-										>
-											−
-										</button>
-										<span className="min-w-5 text-center text-sm">
-											{quantity}
-										</span>
-										<button
-											type="button"
-											aria-label={`Tambah ${product.name}`}
-											disabled={product.soldOut || quantity >= product.stock}
-											onClick={() => addProduct(product)}
-											className="h-7 w-7 rounded-md border border-neutral-200 disabled:opacity-40"
-										>
-											+
-										</button>
-									</div>
-								</div>
-							</article>
+								name={product.name}
+								category={product.category}
+								price={product.price}
+								image={product.image}
+								stock={product.stock}
+								stokMinimal={product.stokMinimal}
+								soldOut={product.soldOut}
+								quantity={quantity}
+								onAdd={() =>
+									quantity === 0
+										? addProduct(product)
+										: updateCartItem(
+												product.id,
+												Math.min(quantity + 1, product.stock),
+											)
+								}
+								onDecrease={() => decreaseProduct(product, quantity - 1)}
+							/>
 						);
 					})}
 				</div>

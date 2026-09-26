@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { qk } from "@/lib/query-keys";
 import { getSession } from "@/server/auth-functions";
@@ -28,6 +29,7 @@ export function useSignInMutation() {
 		},
 		onSuccess: (session) => {
 			queryClient.setQueryData(qk.auth.session, session);
+			toast.success("Berhasil masuk.");
 		},
 	});
 }
@@ -43,6 +45,10 @@ export function useSignOutMutation() {
 		},
 		onSuccess: () => {
 			queryClient.removeQueries({ queryKey: qk.auth.root });
+			toast.success("Berhasil keluar.");
+		},
+		onError: () => {
+			toast.error("Gagal keluar. Coba lagi.");
 		},
 	});
 }

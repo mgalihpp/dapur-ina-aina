@@ -5,5 +5,5 @@ import { getSession } from "@/server/auth-functions";
 export const sessionQueryOptions = () =>
 	queryOptions({
 		queryKey: qk.auth.session,
-		queryFn: getSession,
+		queryFn: () => getSession(),
 	});

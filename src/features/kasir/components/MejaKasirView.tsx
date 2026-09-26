@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSetOrderStatus } from "@/features/orders/mutations";
+import { useBebaskanMeja } from "../mutations";
+import { ConfirmModal } from "@/features/shared/components/ConfirmModal";
 import { EmptyState } from "@/features/shared/components/EmptyState";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { kasirMejaOccupancyOptions } from "../queries";
@@ -11,18 +13,30 @@ function shortLabel(nama: string): string {
 	return match?.[1] ?? nama.slice(0, 4);
 }
 
+type PendingMejaAction =
+	| { kind: "selesai" | "batal"; orderId: number }
+	| { kind: "bebas"; mejaId: number; mejaNama: string }
+	| null;
+
 export function MejaKasirView() {
 	const occupancyQuery = useQuery(kasirMejaOccupancyOptions);
 	const rows = occupancyQuery.data ?? [];
 	const setStatusMutation = useSetOrderStatus();
+	const bebaskanMutation = useBebaskanMeja();
 	const [actingId, setActingId] = useState<number | null>(null);
+	const [freeingId, setFreeingId] = useState<number | null>(null);
+	const [pending, setPending] = useState<PendingMejaAction>(null);
 	const [lantaiTab, setLantaiTab] = useState<string | null>(null);
 	const loadError = occupancyQuery.isError
 		? queryErrorMessage(occupancyQuery.error, "Gagal memuat denah meja.")
 		: null;
-	const actionError = setStatusMutation.isError
-		? mutationErrorMessage(setStatusMutation.error, "Aksi tidak berhasil.")
-		: null;
+	const actionError =
+		setStatusMutation.isError || bebaskanMutation.isError
+			? mutationErrorMessage(
+					setStatusMutation.error ?? bebaskanMutation.error,
+					"Aksi tidak berhasil.",
+				)
+			: null;
 
 	const lantaiOptions = useMemo(
 		() => [...new Set(rows.map((row) => row.lantai))].sort(),
@@ -31,12 +45,45 @@ export function MejaKasirView() {
 	const activeLantai = lantaiTab ?? lantaiOptions[0] ?? "Lantai 1";
 	const visible = rows.filter((row) => row.lantai === activeLantai);
 
-	function changeStatus(orderId: number, status: "selesai" | "dibatalkan") {
+	function confirmPending() {
+		if (!pending) return;
+		if (pending.kind === "bebas") {
+			const mejaId = pending.mejaId;
+			setFreeingId(mejaId);
+			bebaskanMutation.mutate(
+				{ id: mejaId },
+				{
+					onSettled: () => {
+						setFreeingId(null);
+						setPending(null);
+					},
+				},
+			);
+			return;
+		}
+		const orderId = pending.orderId;
 		setActingId(orderId);
 		setStatusMutation.mutate(
-			{ id: orderId, status },
-			{ onSettled: () => setActingId(null) },
+			{ id: orderId, status: pending.kind === "selesai" ? "selesai" : "dibatalkan" },
+			{
+				onSettled: () => {
+					setActingId(null);
+					setPending(null);
+				},
+			},
 		);
+	}
+
+	function pendingTitle(): string {
+		if (pending?.kind === "bebas") return "Bebaskan Meja Ini ?";
+		if (pending?.kind === "batal") return "Batalkan Pesanan Ini ?";
+		return "Selesaikan Pesanan Ini ?";
+	}
+
+	function pendingMessage(): string {
+		if (pending?.kind === "bebas") return "Meja bisa dipakai tamu lain.";
+		if (pending?.kind === "batal") return "Stok item akan dikembalikan.";
+		return "Pesanan selesai dan tidak bisa diubah.";
 	}
 
 	if (occupancyQuery.isPending) {
@@ -96,6 +143,8 @@ export function MejaKasirView() {
 					{visible.map((row) => {
 						const busy =
 							setStatusMutation.isPending && actingId === row.orderId;
+						const freeing =
+							bebaskanMutation.isPending && freeingId === row.id;
 						return (
 							<div
 								key={row.id}
@@ -123,40 +172,69 @@ export function MejaKasirView() {
 								>
 									{row.terisi ? "Terisi" : "Kosong"}
 								</span>
-								{row.terisi && row.orderId !== null ? (
+								{row.terisi ? (
 									<div className="mt-2 flex flex-col items-center">
-										<p className="text-xs text-neutral-500">
-											Pesanan{" "}
-											<Link
-												to="/kasir/orders"
-												search={{ orderId: String(row.orderId) }}
-												className="font-bold text-[#EF7D1A] underline"
-											>
-												#{row.orderId}
-											</Link>
-										</p>
-										<div className="mt-2 flex flex-wrap justify-center gap-2">
-											<button
-												type="button"
-												disabled={busy}
-												onClick={() =>
-													changeStatus(row.orderId ?? 0, "selesai")
-												}
-												className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-											>
-												Selesaikan
-											</button>
-											<button
-												type="button"
-												disabled={busy}
-												onClick={() =>
-													changeStatus(row.orderId ?? 0, "dibatalkan")
-												}
-												className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 disabled:opacity-50"
-											>
-												Batalkan
-											</button>
-										</div>
+										{row.orderId !== null ? (
+											<>
+												<p className="text-xs text-neutral-500">
+													Pesanan{" "}
+													<Link
+														to="/kasir/orders"
+														search={{ orderId: String(row.orderId) }}
+														className="font-bold text-[#EF7D1A] underline"
+													>
+														#{row.orderId}
+													</Link>
+												</p>
+												<div className="mt-2 flex flex-wrap justify-center gap-2">
+													<button
+														type="button"
+														disabled={busy}
+														onClick={() =>
+															setPending({
+																kind: "selesai",
+																orderId: row.orderId ?? 0,
+															})
+														}
+														className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+													>
+														Selesaikan
+													</button>
+													<button
+														type="button"
+														disabled={busy}
+														onClick={() =>
+															setPending({
+																kind: "batal",
+																orderId: row.orderId ?? 0,
+															})
+														}
+														className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 disabled:opacity-50"
+													>
+														Batalkan
+													</button>
+												</div>
+											</>
+										) : (
+											<p className="text-xs text-neutral-500">
+												Tidak ada pesanan aktif
+											</p>
+										)}
+										<button
+											type="button"
+											disabled={freeing}
+											onClick={() =>
+												setPending({
+													kind: "bebas",
+													mejaId: row.id,
+													mejaNama: row.nama,
+												})
+											}
+											title="Tamu sudah pergi, meja siap dipakai lagi"
+											className="mt-2 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-700 disabled:opacity-50"
+										>
+											Bebaskan meja
+										</button>
 									</div>
 								) : (
 									<p className="mt-1 text-xs text-neutral-500">
@@ -168,6 +246,14 @@ export function MejaKasirView() {
 					})}
 				</div>
 			)}
+			<ConfirmModal
+				open={pending !== null}
+				title={pendingTitle()}
+				message={pendingMessage()}
+				busy={setStatusMutation.isPending || bebaskanMutation.isPending}
+				onConfirm={confirmPending}
+				onCancel={() => setPending(null)}
+			/>
 		</main>
 	);
 }

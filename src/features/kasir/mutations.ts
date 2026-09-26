@@ -1,25 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { invalidateKeys } from "@/features/shared/lib/invalidate";
 import { dataQueryFn } from "@/lib/query-helpers";
-import { invalidation, qk } from "@/lib/query-keys";
-import { createOrder } from "@/server/order-functions";
+import { qk } from "@/lib/query-keys";
+import { bebaskanMeja } from "@/server/meja-functions";
 
-const createOrderFn = dataQueryFn(createOrder);
+const bebaskanMejaFn = dataQueryFn(bebaskanMeja);
 
-/**
- * Pesanan kasir memakai stok (keluar) dan mengubah daftar menu serta dasbor.
- * Semua refresh datang dari invalidasi, bukan refetch manual.
- */
-export function useCreateOrder() {
+/** Bebaskan meja eksplisit (tamu pergi). Pesanan selesai tidak otomatis membebaskan. */
+export function useBebaskanMeja() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: createOrderFn,
-		onSuccess: () =>
-			invalidateKeys(queryClient, [
-				...invalidation.stock,
-				...invalidation.orders,
-				...invalidation.dashboard,
-				qk.tables.root,
-			]),
+		mutationFn: bebaskanMejaFn,
+		onSuccess: () => {
+			invalidateKeys(queryClient, [qk.tables.root]);
+			toast.success("Meja dibebaskan.");
+		},
 	});
 }

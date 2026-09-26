@@ -7,6 +7,7 @@ export type AdminProduct = {
 	status: ProductStatus;
 	productId: string;
 	quantity: number;
+	stokMinimal: number;
 	price: number;
 	kategoriId: number;
 	kategori: string;
@@ -21,6 +22,7 @@ export type ProductFormValues = {
 	kategoriId: string;
 	price: string;
 	stok: string;
+	stokMinimal: string;
 	gambar: string;
 };
 

@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Boxes, ClipboardList, LayoutGrid, ShoppingCart } from "lucide-react";
+import { Boxes, ClipboardList, LayoutGrid } from "lucide-react";
 import { useSignOutMutation } from "@/features/auth/mutations";
-import { usePosStore } from "@/features/kasir/lib/pos-store";
 import { useOrdersStore } from "@/features/orders/lib/orders-store";
 import {
 	AppSidebar,
@@ -19,12 +18,6 @@ export function KasirSidebar() {
 			label: "Dasbor",
 			active: pathname === "/kasir",
 			to: "/kasir",
-		},
-		{
-			icon: ShoppingCart,
-			label: "POS",
-			active: pathname === "/kasir/pos",
-			to: "/kasir/pos",
 		},
 		{
 			icon: ClipboardList,
@@ -47,7 +40,6 @@ export function KasirSidebar() {
 	];
 
 	function logout() {
-		usePosStore.getState().reset();
 		useOrdersStore.getState().reset();
 		signOutMutation.mutate(undefined, {
 			onSuccess: () => void navigate({ to: "/login" }),

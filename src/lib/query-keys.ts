@@ -64,7 +64,6 @@ export const qk = {
 		detail: (id: string | number) =>
 			["products", "admin", "detail", String(id)] as const,
 		cashierRoot: ["products", "cashier"] as const,
-		cashierCatalog: ["products", "cashier", "catalog"] as const,
 	},
 	tables: {
 		root: ["tables"] as const,
@@ -109,16 +108,11 @@ export const qk = {
 
 /** Prefix yang boleh di-invalidate bersama setelah mutation lintas domain. */
 export const invalidation = {
-	catalog: [
-		qk.products.adminList,
-		qk.products.cashierCatalog,
-		qk.public.catalog,
-	] as const,
+	catalog: [qk.products.adminList, qk.public.catalog] as const,
 	stock: [
 		qk.stock.overview,
 		qk.stock.movesRoot,
 		qk.products.adminList,
-		qk.products.cashierCatalog,
 		qk.public.catalog,
 	] as const,
 	dashboard: [qk.dashboard.adminRoot, qk.dashboard.cashier] as const,

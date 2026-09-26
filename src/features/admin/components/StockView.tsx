@@ -180,7 +180,7 @@ export function StockView() {
 
 	const stats = [
 		{
-			label: "Total produk",
+			label: "Total menu",
 			value: products.length,
 			hint: `${totalUnits} unit tersimpan`,
 			icon: Boxes,
@@ -226,7 +226,7 @@ export function StockView() {
 						</DialogHeader>
 						<form onSubmit={submitRestock} className="grid gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="restock-product">Produk</Label>
+								<Label htmlFor="restock-product">Menu</Label>
 								<SearchSelect
 									id="restock-product"
 									value={dialogProductId}
@@ -236,10 +236,10 @@ export function StockView() {
 										label: p.name,
 										hint: `stok ${p.stock}`,
 									}))}
-									placeholder="Pilih produk"
-									searchPlaceholder="Cari produk…"
-									emptyText="Tidak ada produk yang cocok."
-									ariaLabel="Pilih produk untuk restock"
+									placeholder="Pilih menu"
+									searchPlaceholder="Cari menu…"
+									emptyText="Tidak ada menu yang cocok."
+									ariaLabel="Pilih menu untuk restock"
 									className="w-full"
 								/>
 							</div>
@@ -360,7 +360,7 @@ export function StockView() {
 							<div>
 								<CardTitle>Persediaan saat ini</CardTitle>
 								<CardDescription>
-									{filtered.length} dari {products.length} produk
+									{filtered.length} dari {products.length} menu
 									{habis > 0 ? ` · ${habis} habis perlu restock` : ""}
 								</CardDescription>
 							</div>
@@ -368,8 +368,8 @@ export function StockView() {
 								<div className="relative">
 									<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 									<Input
-										aria-label="Cari produk"
-										placeholder="Cari produk…"
+										aria-label="Cari menu"
+										placeholder="Cari menu…"
 										value={query}
 										onChange={(e) => setQuery(e.target.value)}
 										className="w-[200px] pl-9"
@@ -417,12 +417,12 @@ export function StockView() {
 									variant={products.length === 0 ? "stock" : "search"}
 									title={
 										products.length === 0
-											? "Belum ada produk untuk dipantau"
-											: "Tidak ada produk yang cocok"
+											? "Belum ada menu untuk dipantau"
+											: "Tidak ada menu yang cocok"
 									}
 									description={
 										products.length === 0
-											? "Tambahkan produk dan catat stok masuk untuk mulai memantau persediaan."
+											? "Tambahkan menu dan catat stok masuk untuk mulai memantau persediaan."
 											: "Coba ubah kata kunci atau kosongkan filter kategori dan kondisi."
 									}
 									action={
@@ -448,7 +448,7 @@ export function StockView() {
 								<Table>
 									<TableHeader>
 										<TableRow>
-											<TableHead>Produk</TableHead>
+											<TableHead>Menu</TableHead>
 											<TableHead>Kategori</TableHead>
 											<TableHead className="w-[220px]">Stok</TableHead>
 											<TableHead>Kondisi</TableHead>
@@ -467,6 +467,9 @@ export function StockView() {
 														<span className="w-8 text-right font-semibold tabular-nums">
 															{p.stock}
 														</span>
+														<span className="text-xs text-neutral-400 tabular-nums">
+															min {p.stokMinimal}
+														</span>
 														<div
 															role="progressbar"
 															aria-valuenow={p.stock}
@@ -476,7 +479,7 @@ export function StockView() {
 															className="h-1.5 w-28 overflow-hidden rounded-full bg-muted"
 														>
 															<div
-																className={`h-full rounded-full ${stockBarTone(p.stock)}`}
+																className={`h-full rounded-full ${stockBarTone(p.stock, p.stokMinimal)}`}
 																style={{
 																	width: `${Math.min(100, (Math.max(0, p.stock) / MAX_BAR) * 100)}%`,
 																}}
@@ -485,7 +488,7 @@ export function StockView() {
 													</div>
 												</TableCell>
 												<TableCell>
-													<StockStatusBadge stock={p.stock} />
+													<StockStatusBadge stock={p.stock} minimal={p.stokMinimal} />
 												</TableCell>
 												<TableCell className="text-right">
 													<Button
@@ -519,16 +522,16 @@ export function StockView() {
 									value={moveProductId || "all"}
 									onChange={(v) => setMoveProductId(v === "all" ? "" : v)}
 									options={[
-										{ value: "all", label: "Semua produk" },
+										{ value: "all", label: "Semua menu" },
 										...products.map((p) => ({
 											value: String(p.id),
 											label: p.name,
 											hint: p.category,
 										})),
 									]}
-									placeholder="Semua produk"
-									searchPlaceholder="Cari produk…"
-									emptyText="Tidak ada produk yang cocok."
+									placeholder="Semua menu"
+									searchPlaceholder="Cari menu…"
+									emptyText="Tidak ada menu yang cocok."
 									ariaLabel="Filter produk"
 									className="w-[170px]"
 								/>
@@ -616,7 +619,7 @@ export function StockView() {
 									<TableHeader>
 										<TableRow>
 											<TableHead>Tanggal</TableHead>
-											<TableHead>Produk</TableHead>
+											<TableHead>Menu</TableHead>
 											<TableHead>Jenis</TableHead>
 											<TableHead className="text-right">Jumlah</TableHead>
 										</TableRow>

@@ -28,7 +28,7 @@ export function ProductsView() {
 	const loading = productsQuery.isPending || categoriesQuery.isPending;
 	const deleting = deleteProduct.isPending;
 	const loadError = productsQuery.isError
-		? queryErrorMessage(productsQuery.error, "Gagal memuat produk")
+		? queryErrorMessage(productsQuery.error, "Gagal memuat menu")
 		: categoriesQuery.isError
 			? queryErrorMessage(categoriesQuery.error, "Gagal memuat kategori")
 			: null;
@@ -59,7 +59,7 @@ export function ProductsView() {
 			{
 				onSuccess: () => setDeleteTarget(null),
 				onError: (cause) =>
-					setError(mutationErrorMessage(cause, "Gagal menghapus produk")),
+					setError(mutationErrorMessage(cause, "Gagal menghapus menu")),
 			},
 		);
 	}
@@ -67,13 +67,13 @@ export function ProductsView() {
 	return (
 		<div className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-8">
 			<div className="flex items-center justify-between">
-				<h1 className="text-xl font-bold text-neutral-900">Produk</h1>
+				<h1 className="text-xl font-bold text-neutral-900">Menu</h1>
 				<button
 					type="button"
 					onClick={() => navigate({ to: "/admin/menu/add" })}
 					className="rounded-lg bg-[#F97316] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ea6a0a]"
 				>
-					+ Tambah Produk
+					+ Tambah Menu
 				</button>
 			</div>
 			{notice ? (
@@ -83,14 +83,14 @@ export function ProductsView() {
 			) : null}
 			<div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-t-2xl border border-neutral-100 bg-white px-4 py-3">
 				<p className="text-sm text-muted-foreground">
-					{filteredProducts.length} dari {products.length} produk
+					{filteredProducts.length} dari {products.length} menu
 				</p>
 				<div className="flex flex-wrap items-center gap-2">
 					<div className="relative">
 						<Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input
-							aria-label="Cari produk"
-							placeholder="Cari produk…"
+							aria-label="Cari menu"
+							placeholder="Cari menu…"
 							value={query}
 							onChange={(event) => setQuery(event.target.value)}
 							className="w-[200px] pl-9"
@@ -117,21 +117,21 @@ export function ProductsView() {
 			<div className="overflow-x-auto rounded-b-2xl border border-t-0 border-neutral-100 bg-white shadow-sm">
 				{loading ? (
 					<p className="px-4 py-8 text-center text-sm text-neutral-500">
-						Memuat produk…
+						Memuat menu…
 					</p>
 				) : filteredProducts.length === 0 ? (
 					products.length === 0 ? (
 						<EmptyState
 							variant="menu"
-							title="Belum ada produk"
-							description="Tambahkan produk pertama supaya menu bisa mulai dipesan pelanggan."
+							title="Belum ada menu"
+							description="Tambahkan menu pertama supaya bisa mulai dipesan pelanggan."
 							action={
 								<button
 									type="button"
 									onClick={() => navigate({ to: "/admin/menu/add" })}
 									className="rounded-xl bg-[#F97316] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a]"
 								>
-									Tambah produk
+									Tambah menu
 								</button>
 							}
 							className="m-4"
@@ -139,7 +139,7 @@ export function ProductsView() {
 					) : (
 						<EmptyState
 							variant="search"
-							title="Tidak ada produk yang cocok"
+							title="Tidak ada menu yang cocok"
 							description="Coba ubah kata kunci atau kosongkan filter kategori."
 							action={
 								<button

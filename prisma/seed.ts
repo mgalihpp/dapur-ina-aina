@@ -208,7 +208,6 @@ async function seedProducts(kategoriIds: Map<string, number>): Promise<void> {
 		where: { namaProduk: { in: LEGACY_NAMES } },
 	});
 	const today = new Date();
-	today.setHours(0, 0, 0, 0);
 	for (const p of PRODUCTS) {
 		const kategoriId = kategoriIds.get(p.kategori);
 		if (!kategoriId) throw new Error(`Kategori hilang: ${p.kategori}`);
@@ -272,7 +271,7 @@ type SeedOrder = {
 	hariLalu: number;
 	status: "diproses" | "selesai" | "dibatalkan";
 	items: SeedItem[];
-	bayar?: { metode: "tunai" | "non_tunai"; lunas: boolean };
+	bayar?: { metode: "tunai" | "non_tunai"; lunas: boolean; nol?: boolean };
 	meja?: string;
 	tamu?: number;
 };
@@ -288,6 +287,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Tempe Mendoan", jumlah: 1 },
 		],
 		bayar: { metode: "tunai", lunas: true },
+		meja: "Meja 3",
+		tamu: 4,
 	},
 	{
 		hariLalu: 0,
@@ -298,6 +299,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Pisang Goreng", jumlah: 1 },
 		],
 		bayar: { metode: "non_tunai", lunas: true },
+		meja: "Meja 4",
+		tamu: 2,
 	},
 	{
 		hariLalu: 1,
@@ -308,6 +311,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Lumpia Semarang", jumlah: 1 },
 		],
 		bayar: { metode: "tunai", lunas: true },
+		meja: "Meja 5",
+		tamu: 3,
 	},
 	{
 		hariLalu: 3,
@@ -317,6 +322,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Kopi Tubruk", jumlah: 2 },
 		],
 		bayar: { metode: "non_tunai", lunas: true },
+		meja: "Meja 6",
+		tamu: 2,
 	},
 	{
 		hariLalu: 6,
@@ -327,6 +334,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Tahu Gejrot", jumlah: 2 },
 		],
 		bayar: { metode: "tunai", lunas: true },
+		meja: "Meja 7",
+		tamu: 5,
 	},
 	{
 		hariLalu: 9,
@@ -336,6 +345,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Jus Alpukat", jumlah: 2 },
 		],
 		bayar: { metode: "tunai", lunas: true },
+		meja: "Meja 8",
+		tamu: 2,
 	},
 	{
 		hariLalu: 16,
@@ -345,6 +356,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Es Cendol", jumlah: 2 },
 		],
 		bayar: { metode: "non_tunai", lunas: true },
+		meja: "Meja 3",
+		tamu: 2,
 	},
 	{
 		hariLalu: 25,
@@ -354,6 +367,8 @@ const ORDERS: SeedOrder[] = [
 			{ nama: "Kopi Tubruk", jumlah: 3 },
 		],
 		bayar: { metode: "tunai", lunas: true },
+		meja: "Meja 4",
+		tamu: 4,
 	},
 	{
 		hariLalu: 0,
@@ -374,18 +389,47 @@ const ORDERS: SeedOrder[] = [
 		tamu: 1,
 	},
 	{
+		hariLalu: 0,
+		status: "diproses",
+		items: [
+			{ nama: "Tempe Mendoan", jumlah: 1 },
+			{ nama: "Es Jeruk", jumlah: 1 },
+		],
+		bayar: { metode: "non_tunai", lunas: false, nol: true },
+		meja: "Meja 6",
+		tamu: 2,
+	},
+	{
 		hariLalu: 2,
 		status: "dibatalkan",
 		items: [{ nama: "Pisang Goreng", jumlah: 2 }],
+		meja: "Meja 5",
+		tamu: 2,
 	},
 ];
 
-function atNoon(daysAgo: number): Date {
+function atTime(daysAgo: number, hour: number, minute: number): Date {
 	const d = new Date();
 	d.setDate(d.getDate() - daysAgo);
-	d.setHours(12, 0, 0, 0);
+	d.setHours(hour, minute, 0, 0);
 	return d;
 }
+
+// Jam bervariasi per pesanan agar riwayat tampil tanggal+jam yang masuk akal.
+const SEED_TIMES: [number, number][] = [
+	[9, 15],
+	[12, 30],
+	[13, 5],
+	[15, 45],
+	[18, 20],
+	[19, 10],
+	[11, 50],
+	[14, 25],
+	[10, 5],
+	[12, 0],
+	[19, 30],
+	[20, 15],
+];
 
 async function seedOrders(
 	kasirId: string,
@@ -398,8 +442,9 @@ async function seedOrders(
 	}
 	const produk = await prisma.produk.findMany();
 	const byName = new Map(produk.map((x) => [x.namaProduk, x]));
-	for (const o of ORDERS) {
-		const tanggal = atNoon(o.hariLalu);
+	for (const [index, o] of ORDERS.entries()) {
+		const [hour, minute] = SEED_TIMES[index % SEED_TIMES.length] ?? [12, 0];
+		const tanggal = atTime(o.hariLalu, hour, minute);
 		await prisma.$transaction(async (tx) => {
 			const lines = o.items.map((item) => {
 				const prod = byName.get(item.nama);
@@ -429,6 +474,12 @@ async function seedOrders(
 					tamu: o.tamu ?? null,
 				},
 			});
+			if (mejaId !== null && o.status === "diproses") {
+				await tx.meja.update({
+					where: { id: mejaId },
+					data: { terisi: true },
+				});
+			}
 			for (const x of lines) {
 				await tx.detailPesanan.create({
 					data: {
@@ -470,9 +521,11 @@ async function seedOrders(
 					});
 				}
 			} else if (o.bayar) {
-				const jumlahBayar = o.bayar.lunas
-					? total
-					: Prisma.Decimal.max(total.minus(5000), 0);
+				const jumlahBayar = o.bayar.nol
+					? new Prisma.Decimal(0)
+					: o.bayar.lunas
+						? total
+						: Prisma.Decimal.max(total.minus(5000), 0);
 				await tx.pembayaran.create({
 					data: {
 						pesananId: pesanan.id,

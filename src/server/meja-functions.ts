@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
 import { ensureAdmin, ensureStaff } from "./guards";
-import { occupancyInclude, toOccupancy } from "./meja-occupancy";
+import { mejaOccupancySelect, toOccupancy } from "./meja-occupancy";
 import {
 	parseIdInput,
 	parseMejaInput,
@@ -28,16 +28,41 @@ export const listMejaOccupancy = createServerFn({ method: "GET" }).handler(
 		await ensureStaff();
 		const rows = await prisma.meja.findMany({
 			orderBy: [{ lantai: "asc" }, { nama: "asc" }],
-			select: {
-				id: true,
-				nama: true,
-				lantai: true,
-				pesanan: occupancyInclude.pesanan,
-			},
+			select: mejaOccupancySelect,
 		});
 		return rows.map(toOccupancy);
 	},
 );
+
+/**
+ * Bebaskan meja secara eksplisit (tamu sudah pergi).
+ * Ditolak bila masih ada pesanan `diproses` agar tamu lain tidak duduk
+ * di meja yang orderannya masih jalan.
+ */
+export const bebaskanMeja = createServerFn({ method: "POST" })
+	.validator(parseIdInput)
+	.handler(async ({ data }) => {
+		await ensureStaff();
+		return prisma.$transaction(async (tx) => {
+			const meja = await tx.meja.findUnique({
+				where: { id: data.id },
+				select: { id: true },
+			});
+			if (!meja) throw new Error("Meja tidak ditemukan.");
+			const aktif = await tx.pesanan.count({
+				where: { mejaId: data.id, status: "diproses" },
+			});
+			if (aktif > 0)
+				throw new Error(
+					"Meja masih punya pesanan diproses. Selesaikan atau batalkan dulu.",
+				);
+			await tx.meja.update({
+				where: { id: data.id },
+				data: { terisi: false },
+			});
+			return { id: data.id };
+		});
+	});
 
 export const createMeja = createServerFn({ method: "POST" })
 	.validator(parseMejaInput)

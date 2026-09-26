@@ -14,7 +14,7 @@ function EditProductRoute() {
 	if (productQuery.isPending) {
 		return (
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
-				<p className="text-sm text-neutral-500">Memuat produk…</p>
+				<p className="text-sm text-neutral-500">Memuat menu…</p>
 			</div>
 		);
 	}
@@ -22,9 +22,9 @@ function EditProductRoute() {
 	if (productQuery.isError || !productQuery.data) {
 		return (
 			<div className="mx-auto w-full max-w-[1440px] px-4 py-6">
-				<h1 className="text-xl font-bold text-neutral-900">Ubah Produk</h1>
+				<h1 className="text-xl font-bold text-neutral-900">Ubah Menu</h1>
 				<div className="mt-4 rounded-2xl border border-neutral-100 bg-white p-6 text-center shadow-sm">
-					<p className="text-sm text-neutral-500">Produk tidak ditemukan.</p>
+					<p className="text-sm text-neutral-500">Menu tidak ditemukan.</p>
 					<button
 						type="button"
 						onClick={() => navigate({ to: "/admin/menu" })}

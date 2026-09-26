@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { invalidateKeys } from "@/features/shared/lib/invalidate";
 import { dataQueryFn } from "@/lib/query-helpers";
 import { invalidation, qk } from "@/lib/query-keys";
@@ -43,7 +44,10 @@ export function useCreateCategory() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: createCategoryFn,
-		onSuccess: () => invalidateKeys(queryClient, categoryKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, categoryKeys);
+			toast.success("Kategori ditambahkan.");
+		},
 	});
 }
 
@@ -51,7 +55,10 @@ export function useUpdateCategory() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: updateCategoryFn,
-		onSuccess: () => invalidateKeys(queryClient, categoryKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, categoryKeys);
+			toast.success("Kategori diubah.");
+		},
 	});
 }
 
@@ -59,7 +66,10 @@ export function useDeleteCategory() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: deleteCategoryFn,
-		onSuccess: () => invalidateKeys(queryClient, categoryKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, categoryKeys);
+			toast.success("Kategori dihapus.");
+		},
 	});
 }
 
@@ -67,7 +77,10 @@ export function useCreateMeja() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: createMejaFn,
-		onSuccess: () => invalidateKeys(queryClient, tableKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, tableKeys);
+			toast.success("Meja ditambahkan.");
+		},
 	});
 }
 
@@ -75,7 +88,10 @@ export function useRenameMeja() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: renameMejaFn,
-		onSuccess: () => invalidateKeys(queryClient, tableKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, tableKeys);
+			toast.success("Meja diubah.");
+		},
 	});
 }
 
@@ -83,7 +99,10 @@ export function useDeleteMeja() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: deleteMejaFn,
-		onSuccess: () => invalidateKeys(queryClient, tableKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, tableKeys);
+			toast.success("Meja dihapus.");
+		},
 	});
 }
 
@@ -92,7 +111,10 @@ export function useRestockProduct() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: restockFn,
-		onSuccess: () => invalidateKeys(queryClient, invalidation.stock),
+		onSuccess: () => {
+			invalidateKeys(queryClient, invalidation.stock);
+			toast.success("Stok ditambahkan.");
+		},
 	});
 }
 
@@ -100,7 +122,10 @@ export function useCreateStaffUser() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: createStaffUserFn,
-		onSuccess: () => invalidateKeys(queryClient, userKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, userKeys);
+			toast.success("Pengguna ditambahkan.");
+		},
 	});
 }
 
@@ -108,7 +133,10 @@ export function useUpdateStaffUser() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: updateStaffUserFn,
-		onSuccess: () => invalidateKeys(queryClient, userKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, userKeys);
+			toast.success("Pengguna diubah.");
+		},
 	});
 }
 
@@ -116,6 +144,9 @@ export function useDeleteStaffUser() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: deleteStaffUserFn,
-		onSuccess: () => invalidateKeys(queryClient, userKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, userKeys);
+			toast.success("Pengguna dihapus.");
+		},
 	});
 }

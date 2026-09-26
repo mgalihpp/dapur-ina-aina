@@ -137,14 +137,16 @@ export const getDashboard = createServerFn({ method: "GET" })
 export const getCashierDashboard = createServerFn({ method: "GET" }).handler(
 	async () => {
 		await ensureStaff();
-		const [pendingOrders, lowStock] = await Promise.all([
+		const [pendingOrders, products] = await Promise.all([
 			prisma.pesanan.count({ where: { status: "diproses" } }),
 			prisma.produk.findMany({
-				where: { stok: { lte: 5 } },
-				select: { id: true, namaProduk: true, stok: true },
+				select: { id: true, namaProduk: true, stok: true, stokMinimal: true },
 				orderBy: [{ stok: "asc" }, { namaProduk: "asc" }],
 			}),
 		]);
+		const lowStock = products.filter(
+			(product) => product.stok <= product.stokMinimal,
+		);
 		return {
 			pendingOrders,
 			lowStock: lowStock.map((product) => ({

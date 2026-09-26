@@ -3,27 +3,12 @@ import { dataQueryFn, passthroughQueryFn } from "@/lib/query-helpers";
 import { qk } from "@/lib/query-keys";
 import { getCashierDashboard } from "@/server/dashboard-functions";
 import { listMejaOccupancy } from "@/server/meja-functions";
-import { listCashierCatalog } from "@/server/product-functions";
 import { getStockOverview, listStockMoves } from "@/server/stock-functions";
 
-const fetchCashierCatalog = passthroughQueryFn(listCashierCatalog);
 const fetchCashierDashboard = passthroughQueryFn(getCashierDashboard);
 const fetchMejaOccupancy = passthroughQueryFn(listMejaOccupancy);
 const fetchStockOverview = passthroughQueryFn(getStockOverview);
 const fetchStockMoves = dataQueryFn(listStockMoves);
-
-export type CashierCatalogProduct = Awaited<
-	ReturnType<typeof listCashierCatalog>
->[number];
-
-export const cashierCatalogOptions = queryOptions({
-	queryKey: qk.products.cashierCatalog,
-	queryFn: () => fetchCashierCatalog(),
-});
-
-export function useCashierCatalog() {
-	return useQuery(cashierCatalogOptions);
-}
 
 export const cashierDashboardOptions = queryOptions({
 	queryKey: qk.dashboard.cashier,

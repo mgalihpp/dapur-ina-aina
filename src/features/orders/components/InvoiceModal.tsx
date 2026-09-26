@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { fmtDateTime, fmtDecimalMoney } from "@/features/shared/lib/format";
+import { BillingSheet } from "@/features/shared/components/BillingSheet";
 import type { AdminOrderDetail } from "@/server/order-functions";
 
 type InvoiceModalProps = {
@@ -14,100 +14,49 @@ export function InvoiceModal({ order, onClose, onPrinted }: InvoiceModalProps) {
 			if (event.key === "Escape") onClose();
 		}
 		document.addEventListener("keydown", onKey);
-		return () => document.removeEventListener("keydown", onKey);
+		const prevBodyOverflow = document.body.style.overflow;
+		const prevHtmlOverflow = document.documentElement.style.overflow;
+		document.body.style.overflow = "hidden";
+		document.documentElement.style.overflow = "hidden";
+		return () => {
+			document.removeEventListener("keydown", onKey);
+			document.body.style.overflow = prevBodyOverflow;
+			document.documentElement.style.overflow = prevHtmlOverflow;
+		};
 	}, [onClose]);
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 print:static print:block print:p-0">
-			<button
-				type="button"
-				aria-label="Tutup struk"
-				onClick={onClose}
-				className="absolute inset-0 cursor-default bg-black/40 print:hidden"
-			/>
+		<div
+			role="dialog"
+			aria-modal="true"
+			aria-label="Billing pesanan"
+			onClick={onClose}
+			className="fixed inset-0 z-50 overflow-y-auto bg-black/40 print:static print:overflow-visible print:bg-transparent print:p-0"
+		>
+			<div className="relative flex min-h-full items-start justify-center p-4 print:block print:p-0">
 			<article
 				data-print-invoice
-				className="relative max-h-full w-full max-w-[420px] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl print:max-h-none print:max-w-none print:overflow-visible print:rounded-none print:p-0 print:shadow-none"
+				onClick={(event) => event.stopPropagation()}
+				className="relative w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-xl print:max-w-none print:rounded-none print:p-0 print:shadow-none"
 			>
-				<header className="text-center">
-					<h2 className="text-xl font-bold">Dapur Ina Aina</h2>
-					<p className="mt-1 text-sm text-neutral-500">
-						Billing pesanan #{order.id}
-					</p>
-				</header>
-				<dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 border-y border-dashed border-neutral-300 py-4 text-sm">
-					<dt className="text-neutral-500">Tanggal</dt>
-					<dd className="text-right font-medium">
-						{fmtDateTime(order.tanggal)}
-					</dd>
-					<dt className="text-neutral-500">Kasir</dt>
-					<dd className="text-right font-medium">{order.kasir}</dd>
-					<dt className="text-neutral-500">Status pesanan</dt>
-					<dd className="text-right font-medium">{order.status}</dd>
-					<dt className="text-neutral-500">Status pembayaran</dt>
-					<dd className="text-right font-medium">
-						{order.paymentStatus === "lunas" ? "Lunas" : "Belum lunas"}
-					</dd>
-					<dt className="text-neutral-500">Metode</dt>
-					<dd className="text-right font-medium">
-						{order.paymentMethod === "tunai"
-							? "Tunai"
-							: order.paymentMethod === "non_tunai"
-								? "Non-tunai"
-								: "Belum dibayar"}
-					</dd>
-					{order.paymentDate ? (
-						<>
-							<dt className="text-neutral-500">Tanggal bayar</dt>
-							<dd className="text-right font-medium">
-								{order.paymentDate ? fmtDateTime(order.paymentDate) : null}
-							</dd>
-						</>
-					) : null}
-				</dl>
-				<table className="mt-4 w-full text-sm">
-					<thead>
-						<tr className="text-left text-xs text-neutral-500">
-							<th className="pb-2">Item</th>
-							<th className="pb-2 text-right">Qty</th>
-							<th className="pb-2 text-right">Harga</th>
-							<th className="pb-2 text-right">Subtotal</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-neutral-100">
-						{order.items.map((item) => (
-							<tr key={item.id}>
-								<td className="py-2 pr-2">{item.name}</td>
-								<td className="py-2 text-right">{item.qty}</td>
-								<td className="py-2 text-right">
-									{fmtDecimalMoney(item.price)}
-								</td>
-								<td className="py-2 text-right">
-									{fmtDecimalMoney(item.subtotal)}
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-				<dl className="mt-4 space-y-2 border-t border-dashed border-neutral-300 pt-4 text-sm">
-					<div className="flex justify-between font-bold">
-						<dt>Total</dt>
-						<dd>{fmtDecimalMoney(order.total)}</dd>
-					</div>
-					{order.paymentAmount ? (
-						<div className="flex justify-between">
-							<dt>Jumlah dibayar</dt>
-							<dd>{fmtDecimalMoney(order.paymentAmount)}</dd>
-						</div>
-					) : null}
-					{order.change ? (
-						<div className="flex justify-between">
-							<dt>Kembalian</dt>
-							<dd>{fmtDecimalMoney(order.change)}</dd>
-						</div>
-					) : null}
-				</dl>
-				<div className="mt-6 flex justify-center print:hidden">
+				<BillingSheet
+					data={{
+						id: order.id,
+						tanggal: order.tanggal,
+						kasir: order.kasir,
+						mejaNama: order.meja?.nama ?? null,
+						tamu: order.tamu,
+						status: order.status,
+						paymentStatus: order.paymentStatus,
+						paymentMethod: order.paymentMethod,
+						paymentAmount: order.paymentAmount,
+						paymentDate: order.paymentDate,
+						change: order.change,
+						total: order.total,
+						items: order.items,
+					}}
+				/>
+				<div className="mt-6 flex justify-center border-t border-dashed border-neutral-300 pt-6 print:hidden">
 					<button
 						type="button"
 						onClick={() => {
@@ -120,6 +69,7 @@ export function InvoiceModal({ order, onClose, onPrinted }: InvoiceModalProps) {
 					</button>
 				</div>
 			</article>
+			</div>
 		</div>
 	);
 }

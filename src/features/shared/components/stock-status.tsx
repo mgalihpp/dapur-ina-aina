@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 
 export type StockCondition = "habis" | "menipis" | "aman";
 
-export function stockConditionOf(stock: number): StockCondition {
+export function stockConditionOf(stock: number, minimal = 5): StockCondition {
 	if (stock <= 0) return "habis";
-	if (stock <= 5) return "menipis";
+	if (stock <= minimal) return "menipis";
 	return "aman";
 }
 
@@ -23,12 +23,14 @@ const conditionLabels: Record<StockCondition, string> = {
 
 export function StockStatusBadge({
 	stock,
+	minimal = 5,
 	className,
 }: {
 	stock: number;
+	minimal?: number;
 	className?: string;
 }) {
-	const condition = stockConditionOf(stock);
+	const condition = stockConditionOf(stock, minimal);
 	return (
 		<Badge
 			variant="outline"
@@ -50,8 +52,8 @@ export function StockStatusBadge({
 	);
 }
 
-export function stockBarTone(stock: number): string {
+export function stockBarTone(stock: number, minimal = 5): string {
 	if (stock <= 0) return "bg-red-500";
-	if (stock <= 5) return "bg-amber-500";
+	if (stock <= minimal) return "bg-amber-500";
 	return "bg-emerald-500";
 }

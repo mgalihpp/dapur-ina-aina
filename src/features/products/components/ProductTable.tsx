@@ -17,9 +17,9 @@ export function ProductTable({
 		<table className="w-full min-w-[760px] border-collapse text-left text-sm">
 			<thead>
 				<tr className="text-neutral-400">
-					<th className="px-4 py-3 text-left font-medium">Produk</th>
+					<th className="px-4 py-3 text-left font-medium">Menu</th>
 					<th className="px-4 py-3 text-center font-medium">Status</th>
-					<th className="px-4 py-3 text-center font-medium">ID Produk</th>
+					<th className="px-4 py-3 text-center font-medium">ID</th>
 					<th className="px-4 py-3 text-center font-medium">Stok</th>
 					<th className="px-4 py-3 text-center font-medium">Harga</th>
 					<th className="px-4 py-3 text-center font-medium">Aksi</th>

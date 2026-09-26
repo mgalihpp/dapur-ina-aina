@@ -255,7 +255,7 @@ export function KasirStockView() {
 															className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"
 														>
 															<div
-																className={`h-full rounded-full ${stockBarTone(p.stock)}`}
+																className={`h-full rounded-full ${stockBarTone(p.stock, p.stokMinimal)}`}
 																style={{
 																	width: `${Math.min(100, (Math.max(0, p.stock) / MAX_BAR) * 100)}%`,
 																}}
@@ -264,7 +264,7 @@ export function KasirStockView() {
 													</div>
 												</TableCell>
 												<TableCell>
-													<StockStatusBadge stock={p.stock} />
+													<StockStatusBadge stock={p.stock} minimal={p.stokMinimal} />
 												</TableCell>
 											</TableRow>
 										))}

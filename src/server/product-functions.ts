@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
-import { ensureAdmin, ensureStaff } from "./guards";
+import { ensureAdmin } from "./guards";
 import {
 	parseIdInput,
 	parseProductInput,
@@ -15,6 +15,7 @@ export type AdminProductRow = {
 	status: "In Stock" | "Out of Stock";
 	productId: string;
 	quantity: number;
+	stokMinimal: number;
 	price: number;
 	kategoriId: number;
 	kategori: string;
@@ -25,6 +26,7 @@ function toRow(p: {
 	namaProduk: string;
 	harga: { toString(): string };
 	stok: number;
+	stokMinimal: number;
 	gambar: string | null;
 	kategoriId: number;
 	kategori: { namaKategori: string };
@@ -36,6 +38,7 @@ function toRow(p: {
 		status: p.stok > 0 ? "In Stock" : "Out of Stock",
 		productId: String(p.id).padStart(8, "0"),
 		quantity: p.stok,
+		stokMinimal: p.stokMinimal,
 		price: Number(p.harga.toString()),
 		kategoriId: p.kategoriId,
 		kategori: p.kategori.namaKategori,
@@ -50,25 +53,6 @@ export const listProducts = createServerFn({ method: "GET" }).handler(
 			orderBy: { id: "asc" },
 		});
 		return rows.map(toRow);
-	},
-);
-
-export const listCashierCatalog = createServerFn({ method: "GET" }).handler(
-	async () => {
-		await ensureStaff();
-		const products = await prisma.produk.findMany({
-			include: { kategori: { select: { namaKategori: true } } },
-			orderBy: [{ kategori: { namaKategori: "asc" } }, { namaProduk: "asc" }],
-		});
-		return products.map((product) => ({
-			id: product.id,
-			name: product.namaProduk,
-			price: product.harga.toFixed(2),
-			stock: product.stok,
-			image: product.gambar ?? "/logo.png",
-			categoryId: product.kategoriId,
-			category: product.kategori.namaKategori,
-		}));
 	},
 );
 
@@ -98,6 +82,7 @@ export const createProduct = createServerFn({ method: "POST" })
 					namaProduk: data.namaProduk,
 					harga: new Prisma.Decimal(data.harga),
 					stok: data.stok,
+					stokMinimal: data.stokMinimal,
 					kategoriId: data.kategoriId,
 					gambar: data.gambar,
 				},
@@ -135,6 +120,7 @@ export const updateProduct = createServerFn({ method: "POST" })
 				data: {
 					namaProduk: data.namaProduk,
 					harga: new Prisma.Decimal(data.harga),
+					stokMinimal: data.stokMinimal,
 					kategoriId: data.kategoriId,
 					gambar: data.gambar,
 				},

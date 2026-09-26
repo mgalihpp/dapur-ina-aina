@@ -73,7 +73,7 @@ export function AdminDashboard() {
 									? "Memuat status stok…"
 									: stockError
 										? "Status stok belum tersedia."
-										: `${lowStock.length} produk memiliki stok 5 atau kurang.`}
+										: `${lowStock.length} menu mencapai batas minimal stok.`}
 							</p>
 						</div>
 						<div className="flex shrink-0 items-center gap-2">

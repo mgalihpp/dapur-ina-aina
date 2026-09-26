@@ -57,7 +57,7 @@ export function KasirDashboardView() {
 					to="/kasir/stock"
 					className="rounded-2xl border border-neutral-100 bg-white p-5 text-neutral-900 shadow-sm transition hover:border-orange-200"
 				>
-					<p className="text-sm text-neutral-500">Produk stok menipis (≤ 5)</p>
+					<p className="text-sm text-neutral-500">Menu stok menipis</p>
 					<p className="mt-2 text-3xl font-bold">
 						{summary?.lowStock.length ?? "—"}
 					</p>
@@ -118,10 +118,10 @@ export function KasirDashboardView() {
 				</section>
 			) : null}
 			<Link
-				to="/kasir/pos"
+				to="/kasir/orders"
 				className="mt-6 inline-flex rounded-xl bg-[#F97316] px-5 py-3 text-sm font-bold text-white"
 			>
-				Buat pesanan baru
+				Lihat pesanan
 			</Link>
 		</main>
 	);

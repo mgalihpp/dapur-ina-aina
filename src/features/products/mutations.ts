@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { invalidateKeys } from "@/features/shared/lib/invalidate";
 import { dataQueryFn } from "@/lib/query-helpers";
 import { invalidation, qk } from "@/lib/query-keys";
@@ -21,7 +22,10 @@ export function useCreateProduct() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: createProductFn,
-		onSuccess: () => invalidateKeys(queryClient, stockKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, stockKeys);
+			toast.success("Menu ditambahkan.");
+		},
 	});
 }
 
@@ -29,7 +33,10 @@ export function useUpdateProduct() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: updateProductFn,
-		onSuccess: () => invalidateKeys(queryClient, catalogKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, catalogKeys);
+			toast.success("Menu diubah.");
+		},
 	});
 }
 
@@ -37,6 +44,9 @@ export function useDeleteProduct() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: deleteProductFn,
-		onSuccess: () => invalidateKeys(queryClient, stockKeys),
+		onSuccess: () => {
+			invalidateKeys(queryClient, stockKeys);
+			toast.success("Menu dihapus.");
+		},
 	});
 }

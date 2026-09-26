@@ -67,7 +67,7 @@ export function PublicMejaView() {
 	}
 
 	function selectTable(row: PublicMeja) {
-		if (row.terisi) return;
+		if (row.terisi && !isSameTable(table, row)) return;
 		setTable({
 			id: row.id,
 			nama: row.nama,
@@ -80,7 +80,7 @@ export function PublicMejaView() {
 	}
 
 	function adjustGuest(row: PublicMeja, delta: number) {
-		if (row.terisi) return;
+		if (row.terisi && !isSameTable(table, row)) return;
 		const current = isSameTable(table, row)
 			? (table?.tamu ?? DEFAULT_GUEST_COUNT)
 			: DEFAULT_GUEST_COUNT;
@@ -89,7 +89,7 @@ export function PublicMejaView() {
 	}
 
 	function lanjutkan() {
-		if (!selectedRow || selectedRow.terisi) return;
+		if (!selectedRow) return;
 		void navigate({ to: "/menu" });
 	}
 
@@ -103,7 +103,7 @@ export function PublicMejaView() {
 					action={
 						<button
 							type="button"
-							disabled={!hydrated || !selectedRow || selectedRow.terisi}
+							disabled={!hydrated || !selectedRow}
 							onClick={lanjutkan}
 							className="w-full rounded-xl bg-[#F97316] px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
 						>
@@ -187,7 +187,7 @@ export function PublicMejaView() {
 										Pesanan #{meja.orderId}
 									</p>
 								) : null}
-								{meja.terisi ? null : (
+								{meja.terisi && !isSameTable(table, meja) ? null : (
 									<div className="mt-2 flex items-center gap-3">
 										<button
 											type="button"

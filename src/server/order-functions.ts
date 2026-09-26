@@ -1,14 +1,9 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
-import { ensureStaff } from "./guards";
-import { assertMejaFree } from "./meja-occupancy";
-import { assertOrderTransition, sumOrderTotal } from "./order-domain";
-import {
-	parseOrderFilterInput,
-	parseOrderInput,
-	parseOrderStatusInput,
-} from "./validators";
+import { ensureAdmin, ensureStaff } from "./guards";
+import { assertOrderTransition } from "./order-domain";
+import { parseOrderFilterInput, parseOrderStatusInput } from "./validators";
 
 export type AdminOrderRow = {
 	id: string;
@@ -50,7 +45,7 @@ function toRow(order: OrderRowSource): AdminOrderRow {
 		paymentStatus: order.pembayaran?.status ?? null,
 		status: order.status,
 		tanggal: order.tanggal.toISOString(),
-		kasir: order.user?.name ?? "-",
+		kasir: order.user?.name ?? "Mandiri",
 		meja: order.meja ? { id: order.meja.id, nama: order.meja.nama, lantai: order.meja.lantai } : null,
 		tamu: order.tamu,
 	};
@@ -133,91 +128,6 @@ export const getOrderDetail = createServerFn({ method: "GET" })
 		};
 	});
 
-export const createOrder = createServerFn({ method: "POST" })
-	.validator(parseOrderInput)
-	.handler(async ({ data }) => {
-		const session = await ensureStaff();
-		return prisma.$transaction(async (tx) => {
-			const productIds = data.items
-				.map((item) => item.productId)
-				.sort((left, right) => left - right);
-			await tx.$queryRaw`
-				SELECT id FROM tb_produk
-				WHERE id IN (${Prisma.join(productIds)})
-				ORDER BY id
-				FOR UPDATE
-			`;
-			const products = await tx.produk.findMany({
-				where: { id: { in: productIds } },
-				select: { id: true, namaProduk: true, harga: true },
-			});
-			if (products.length !== data.items.length)
-				throw new Error("Satu atau lebih produk tidak ditemukan.");
-
-			const productsById = new Map(
-				products.map((product) => [product.id, product]),
-			);
-			const orderItems = data.items.map((item) => {
-				const product = productsById.get(item.productId);
-				if (!product) throw new Error("Produk tidak ditemukan.");
-				return {
-					...item,
-					name: product.namaProduk,
-					price: product.harga,
-					subtotal: product.harga.mul(item.quantity),
-				};
-			});
-
-			for (const item of orderItems) {
-				const changed = await tx.produk.updateMany({
-					where: { id: item.productId, stok: { gte: item.quantity } },
-					data: { stok: { decrement: item.quantity } },
-				});
-				if (changed.count !== 1)
-					throw new Error(
-						`Stok ${item.name} tidak mencukupi. Muat ulang daftar produk.`,
-					);
-			}
-
-			const total = new Prisma.Decimal(
-				sumOrderTotal(
-					orderItems.map((item) => ({
-						price: item.price.toString(),
-						quantity: item.quantity,
-					})),
-				),
-			);
-			if (data.mejaId !== null) await assertMejaFree(tx, data.mejaId);
-		const order = await tx.pesanan.create({
-				data: {
-					userId: session.user.id,
-					tanggal: new Date(),
-					total,
-					status: "diproses",
-					mejaId: data.mejaId,
-					detail: {
-						create: orderItems.map((item) => ({
-							produkId: item.productId,
-							jumlah: item.quantity,
-							harga: item.price,
-							subtotal: item.subtotal,
-						})),
-					},
-				},
-				select: { id: true, total: true },
-			});
-			await tx.stok.createMany({
-				data: orderItems.map((item) => ({
-					produkId: item.productId,
-					jumlah: item.quantity,
-					jenis: "keluar",
-					tanggal: new Date(),
-				})),
-			});
-			return { id: order.id, total: order.total.toFixed(2) };
-		});
-	});
-
 export const setOrderStatus = createServerFn({ method: "POST" })
 	.validator(parseOrderStatusInput)
 	.handler(async ({ data }) => {
@@ -258,5 +168,34 @@ export const setOrderStatus = createServerFn({ method: "POST" })
 				}
 			}
 			return { id: order.id, status: data.status };
+		});
+	});
+
+/**
+ * Hapus permanen, admin saja. Hanya pesanan `dibatalkan`: stok sudah
+ * dikembalikan saat pembatalan dan tidak masuk laporan (BR-6: hanya
+ * selesai+lunas). Pesanan diproses harus dibatalkan dulu; pesanan selesai
+ * adalah arsip penjualan dan tidak dapat dihapus.
+ */
+export const deleteOrder = createServerFn({ method: "POST" })
+	.validator((input: { id: string | number }) => {
+		const id = Number(input.id);
+		if (!Number.isInteger(id) || id <= 0) throw new Error("id tidak valid");
+		return { id };
+	})
+	.handler(async ({ data }) => {
+		await ensureAdmin();
+		return prisma.$transaction(async (tx) => {
+			const order = await tx.pesanan.findUnique({
+				where: { id: data.id },
+				select: { id: true, status: true },
+			});
+			if (!order) throw new Error("Pesanan tidak ditemukan.");
+			if (order.status !== "dibatalkan")
+				throw new Error(
+					"Hanya pesanan dibatalkan yang dapat dihapus. Batalkan dulu pesanan diproses; pesanan selesai adalah arsip penjualan.",
+				);
+			await tx.pesanan.delete({ where: { id: data.id } });
+			return { id: order.id };
 		});
 	});

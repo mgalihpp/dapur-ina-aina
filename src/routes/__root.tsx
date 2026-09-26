@@ -2,6 +2,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { Toaster } from "sonner";
 
 import { QueryProgressBar } from "../components/QueryProgressBar";
 import { QueryProvider } from "../lib/query-client";
@@ -52,6 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<QueryProvider>
 					{children}
 					<QueryProgressBar />
+					<Toaster position="top-center" richColors closeButton />
 					<TanStackDevtools
 						config={{
 							position: "bottom-right",

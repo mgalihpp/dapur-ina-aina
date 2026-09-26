@@ -221,7 +221,7 @@ export function CategoriesView() {
 							<TableHeader>
 								<TableRow>
 									<TableHead>Nama kategori</TableHead>
-									<TableHead>Produk</TableHead>
+									<TableHead>Menu</TableHead>
 									<TableHead className="text-right">Aksi</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -234,7 +234,7 @@ export function CategoriesView() {
 												{category.namaKategori}
 											</TableCell>
 											<TableCell>
-												<Badge variant="secondary">{count} produk</Badge>
+												<Badge variant="secondary">{count} menu</Badge>
 											</TableCell>
 											<TableCell className="text-right">
 												<div className="flex items-center justify-end gap-4">
@@ -327,7 +327,7 @@ export function CategoriesView() {
 						<AlertDialogTitle>Hapus kategori ini?</AlertDialogTitle>
 						<AlertDialogDescription>
 							{deleteTarget
-								? `Kategori ${deleteTarget.namaKategori} akan dihapus permanen. Kategori yang masih dipakai produk tidak bisa dihapus.`
+								? `Kategori ${deleteTarget.namaKategori} akan dihapus permanen. Kategori yang masih dipakai menu tidak bisa dihapus.`
 								: ""}
 						</AlertDialogDescription>
 					</AlertDialogHeader>

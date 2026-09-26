@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/lib/prisma";
-import { assertMejaFree, occupancyInclude, toOccupancy } from "./meja-occupancy";
+import { markMejaTerisi, mejaOccupancySelect, toOccupancy } from "./meja-occupancy";
 import { sumOrderTotal } from "./order-domain";
 import { parsePublicOrderInput } from "./validators";
 
@@ -18,6 +18,7 @@ export type PublicCatalogProduct = {
 	name: string;
 	price: string;
 	stock: number;
+	stokMinimal: number;
 	category: string;
 	image: string;
 	soldOut: boolean;
@@ -54,6 +55,7 @@ export const listPublicCatalog = createServerFn({ method: "GET" }).handler(
 			name: product.namaProduk,
 			price: product.harga.toFixed(2),
 			stock: product.stok,
+			stokMinimal: product.stokMinimal,
 			category: product.kategori.namaKategori,
 			image: product.gambar ?? "/logo.png",
 			soldOut: product.stok <= 0,
@@ -65,7 +67,7 @@ export const listPublicMeja = createServerFn({ method: "GET" }).handler(
 	async (): Promise<PublicMeja[]> => {
 		const rows = await prisma.meja.findMany({
 			orderBy: [{ lantai: "asc" }, { nama: "asc" }],
-			select: { id: true, nama: true, lantai: true, pesanan: occupancyInclude.pesanan },
+			select: mejaOccupancySelect,
 		});
 		return rows.map(toOccupancy);
 	},
@@ -125,7 +127,7 @@ export const createPublicOrder = createServerFn({ method: "POST" })
 				),
 			);
 			const tanggal = new Date();
-			if (data.mejaId !== null) await assertMejaFree(tx, data.mejaId);
+			if (data.mejaId !== null) await markMejaTerisi(tx, data.mejaId);
 			const order = await tx.pesanan.create({
 				data: {
 					userId: null,
@@ -142,17 +144,14 @@ export const createPublicOrder = createServerFn({ method: "POST" })
 							subtotal: item.subtotal,
 						})),
 					},
-					pembayaran:
-						data.paymentMethod === "non_tunai"
-							? {
-									create: {
-										metode: "non_tunai",
-										jumlahBayar: total,
-										tanggal,
-										status: "lunas",
-									},
-								}
-							: undefined,
+					pembayaran: {
+						create: {
+							metode: data.paymentMethod,
+							jumlahBayar: new Prisma.Decimal(0),
+							tanggal,
+							status: "belum_lunas",
+						},
+					},
 				},
 				select: { id: true, total: true },
 			});

@@ -1,58 +1,67 @@
 import { TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
-import type { AdminProduct } from "../types";
 
-type DeleteProductModalProps = {
-	product: AdminProduct | null;
+type ConfirmModalProps = {
+	open: boolean;
+	title: string;
+	message: string;
+	confirmLabel?: string;
+	busy?: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
 };
 
-export function DeleteProductModal({
-	product,
+export function ConfirmModal({
+	open,
+	title,
+	message,
+	confirmLabel = "Ya",
+	busy = false,
 	onConfirm,
 	onCancel,
-}: DeleteProductModalProps) {
+}: ConfirmModalProps) {
 	useEffect(() => {
-		if (!product) return;
+		if (!open) return;
 		function onKey(event: KeyboardEvent) {
 			if (event.key === "Escape") onCancel();
 		}
 		document.addEventListener("keydown", onKey);
-		return () => document.removeEventListener("keydown", onKey);
-	}, [product, onCancel]);
+		const prevOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		return () => {
+			document.removeEventListener("keydown", onKey);
+			document.body.style.overflow = prevOverflow;
+		};
+	}, [open, onCancel]);
 
-	if (!product) return null;
+	if (!open) return null;
 
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto">
 			<button
 				type="button"
-				aria-label="Batalkan hapus menu"
+				aria-label="Tutup konfirmasi"
 				onClick={onCancel}
 				className="fixed inset-0 cursor-default bg-black/50"
 			/>
-			<div className="pointer-events-none relative flex min-h-full items-start justify-center p-4">
+			<div className="pointer-events-none relative flex min-h-full items-center justify-center p-4">
 			<div
 				role="dialog"
 				aria-modal="true"
-				aria-label={`Hapus ${product.name}`}
+				aria-label={title}
 				className="pointer-events-auto relative w-full max-w-[360px] rounded-2xl bg-white p-8 text-center shadow-xl"
 			>
 				<TriangleAlert className="mx-auto h-12 w-12 text-red-500" />
-				<h2 className="mt-4 text-lg font-bold text-neutral-900">
-					Hapus Menu Ini ?
-				</h2>
-				<p className="mt-2 text-sm text-neutral-400">
-					Apakah Anda yakin ingin menghapus menu ini?
-				</p>
+				<h2 className="mt-4 text-lg font-bold text-neutral-900">{title}</h2>
+				<p className="mt-2 text-sm text-neutral-400">{message}</p>
 				<div className="mt-6 flex items-center justify-center gap-4">
 					<button
 						type="button"
+						disabled={busy}
 						onClick={onConfirm}
-						className="rounded-lg bg-[#F97316] px-10 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a]"
+						className="rounded-lg bg-[#F97316] px-10 py-2.5 text-sm font-bold text-white transition hover:bg-[#ea6a0a] disabled:opacity-50"
 					>
-						Ya
+						{confirmLabel}
 					</button>
 					<button
 						type="button"

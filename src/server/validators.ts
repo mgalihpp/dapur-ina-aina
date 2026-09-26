@@ -300,6 +300,7 @@ export type ProductInput = {
 	namaProduk: string;
 	harga: string | number;
 	stok: number;
+	stokMinimal?: number;
 	kategoriId: number;
 	gambar: string | null;
 };
@@ -308,6 +309,7 @@ export type ParsedProductInput = {
 	namaProduk: string;
 	harga: string;
 	stok: number;
+	stokMinimal: number;
 	kategoriId: number;
 	gambar: string | null;
 };
@@ -320,6 +322,7 @@ export function parseProductInput(input: ProductInput): ParsedProductInput {
 	const harga =
 		typeof input.harga === "string" ? input.harga.trim() : String(input.harga);
 	const stok = input.stok;
+	const stokMinimalRaw = input.stokMinimal ?? 5;
 	const kategoriId = input.kategoriId;
 	const gambarRaw = input.gambar;
 	const gambar =
@@ -330,12 +333,18 @@ export function parseProductInput(input: ProductInput): ParsedProductInput {
 	if (typeof stok !== "number" || !Number.isInteger(stok) || stok < 0)
 		throw new Error("Stok harus bilangan bulat >= 0.");
 	if (
+		typeof stokMinimalRaw !== "number" ||
+		!Number.isInteger(stokMinimalRaw) ||
+		stokMinimalRaw < 0
+	)
+		throw new Error("Stok minimal harus bilangan bulat >= 0.");
+	if (
 		typeof kategoriId !== "number" ||
 		!Number.isInteger(kategoriId) ||
 		kategoriId <= 0
 	)
 		throw new Error("Kategori wajib dipilih.");
-	return { namaProduk, harga, stok, kategoriId, gambar };
+	return { namaProduk, harga, stok, stokMinimal: stokMinimalRaw, kategoriId, gambar };
 }
 
 export type UpdateProductInput = Omit<ProductInput, "stok"> & {
@@ -349,6 +358,7 @@ export function parseUpdateProductInput(
 	return {
 		namaProduk: parsed.namaProduk,
 		harga: parsed.harga,
+		stokMinimal: parsed.stokMinimal,
 		kategoriId: parsed.kategoriId,
 		gambar: parsed.gambar,
 		...parseIdInput(input),
