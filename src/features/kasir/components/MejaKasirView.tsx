@@ -3,9 +3,14 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSetOrderStatus } from "@/features/orders/mutations";
 import { EmptyState } from "@/features/shared/components/EmptyState";
-import { MejaPlan } from "@/features/shared/components/MejaPlan";
+import { TableIcon } from "@/features/shared/components/table-icon";
 import { mutationErrorMessage, queryErrorMessage } from "@/lib/query-errors";
 import { kasirMejaOccupancyOptions } from "../queries";
+
+function shortLabel(nama: string): string {
+	const match = nama.match(/(\d+)\s*$/);
+	return match?.[1] ?? nama.slice(0, 4);
+}
 
 export function MejaKasirView() {
 	const occupancyQuery = useQuery(kasirMejaOccupancyOptions);
@@ -88,21 +93,31 @@ export function MejaKasirView() {
 					Tidak ada meja di {activeLantai}.
 				</p>
 			) : (
-				<div className="mt-6 grid grid-cols-2 gap-6 sm:grid-cols-3">
+				<div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 					{visible.map((row) => {
 						const busy =
 							setStatusMutation.isPending && actingId === row.orderId;
 						return (
-							<div key={row.id} className="flex flex-col items-center">
-								<MejaPlan
-									nama={row.nama}
-									label={
+							<div
+								key={row.id}
+								className={`flex flex-col items-center rounded-2xl border bg-white p-5 shadow-sm ${
+									row.terisi ? "border-red-200" : "border-neutral-100"
+								}`}
+							>
+								<span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+									<TableIcon className="size-4" />
+									{row.lantai}
+								</span>
+								<span
+									aria-hidden
+									className={`mt-2 flex size-16 items-center justify-center rounded-full border-2 text-xl font-bold ${
 										row.terisi
-											? `${row.nama} terisi, pesanan ${row.orderId}`
-											: `${row.nama} kosong`
-									}
-									ring={row.terisi ? "red" : null}
-								/>
+											? "border-red-400 bg-red-50 text-red-600"
+											: "border-neutral-300 text-neutral-700"
+									}`}
+								>
+									{shortLabel(row.nama)}
+								</span>
 								<p className="mt-2 text-sm font-semibold">{row.nama}</p>
 								<span
 									className={`mt-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
